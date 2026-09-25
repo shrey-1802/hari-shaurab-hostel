@@ -11,13 +11,10 @@ import {
   ArrowLeft,
   UserPlus,
   Upload,
-  Sparkles,
   Building2,
   Users,
   GraduationCap,
-  Calendar,
   Phone,
-  Image,
   Plus,
   X,
 } from 'lucide-react';
@@ -38,7 +35,7 @@ export const AddStudent = () => {
     college_name: COLLEGES[0],
     department: DEPARTMENTS[0],
     semester_result: '',
-    hobbies: [''],
+    hobby: '',
     hostel_friends: '',
     non_hostel_friends: '',
     floor_number: isMainLeader ? 4 : user?.assigned_floor || 4,
@@ -50,23 +47,6 @@ export const AddStudent = () => {
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
-  };
-
-  const handleHobbyChange = (index, value) => {
-    const newHobbies = [...formData.hobbies];
-    newHobbies[index] = value;
-    setFormData((prev) => ({ ...prev, hobbies: newHobbies }));
-  };
-
-  const addHobbyField = () => {
-    setFormData((prev) => ({ ...prev, hobbies: [...prev.hobbies, ''] }));
-  };
-
-  const removeHobbyField = (index) => {
-    setFormData((prev) => ({
-      ...prev,
-      hobbies: prev.hobbies.filter((_, i) => i !== index),
-    }));
   };
 
   const handleImageChange = (e) => {
@@ -84,14 +64,7 @@ export const AddStudent = () => {
     e.preventDefault();
     setLoading(true);
     try {
-      // Convert hobbies array to comma-separated string for backend
-      const submitData = {
-        ...formData,
-        hobby: formData.hobbies.filter((h) => h.trim()).join(', '),
-      };
-      delete submitData.hobbies;
-      
-      const created = await addStudent(submitData);
+      const created = await addStudent(formData);
       showToast(`${formData.full_name} enrolled successfully!`, 'success');
       navigate(`/student/${created.id}`);
     } catch (error) {
@@ -103,7 +76,6 @@ export const AddStudent = () => {
 
   return (
     <div className="space-y-6 max-w-4xl mx-auto">
-      {/* Top Bar */}
       <div className="flex items-center justify-between">
         <Link
           to="/students"
@@ -117,7 +89,6 @@ export const AddStudent = () => {
         </span>
       </div>
 
-      {/* Form Container */}
       <Card>
         <div className="flex items-center gap-3 pb-4 mb-6 border-b border-gray-100">
           <div className="w-10 h-10 rounded-2xl bg-gold-50 text-gold-600 flex items-center justify-center">
@@ -130,7 +101,6 @@ export const AddStudent = () => {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-8">
-          {/* Profile Photo Upload */}
           <div className="p-4 rounded-2xl bg-gray-50 border border-gray-200/80 flex flex-col sm:flex-row items-center gap-6 text-center sm:text-left">
             <div className="w-24 h-24 rounded-full p-1 bg-gradient-to-tr from-gold-400 to-amber-300 shadow-soft-sm shrink-0">
               <img
@@ -150,7 +120,6 @@ export const AddStudent = () => {
             </div>
           </div>
 
-          {/* Section 1: Basic & Contact Info */}
           <div className="space-y-4">
             <h4 className="text-xs font-bold uppercase tracking-wider text-gold-700 flex items-center gap-2">
               <Users className="w-4 h-4" /> 1. Personal & Contact Details
@@ -190,7 +159,6 @@ export const AddStudent = () => {
             </div>
           </div>
 
-          {/* Section 2: Room & Floor Allocation */}
           <div className="space-y-4">
             <h4 className="text-xs font-bold uppercase tracking-wider text-gold-700 flex items-center gap-2">
               <Building2 className="w-4 h-4" /> 2. Room & Floor Allocation
@@ -226,13 +194,11 @@ export const AddStudent = () => {
             </div>
           </div>
 
-          {/* Section 3: Academic Details */}
           <div className="space-y-4">
             <h4 className="text-xs font-bold uppercase tracking-wider text-gold-700 flex items-center gap-2">
               <GraduationCap className="w-4 h-4" /> 3. Academic Details
             </h4>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {/* College - Read-only Text Input */}
               <div>
                 <label className="block text-xs font-semibold text-[#4A4A4A] uppercase tracking-wider mb-2">
                   College / University
@@ -270,55 +236,17 @@ export const AddStudent = () => {
                 onChange={handleChange}
                 placeholder="e.g. 8.75 CGPA (4th Sem)"
               />
-            </div>
 
-            {/* Hobbies & Interests - Multiple Fields */}
-            <div className="space-y-3 pt-4 border-t border-gray-100">
-              <div className="flex items-center justify-between">
-                <label className="text-xs font-semibold text-[#4A4A4A] uppercase tracking-wider">
-                  🎯 Hobbies & Interests
-                </label>
-                <button
-                  type="button"
-                  onClick={addHobbyField}
-                  className="inline-flex items-center gap-1 text-xs font-bold text-gold-600 bg-gold-50 px-3 py-1.5 rounded-lg border border-gold-200 hover:bg-gold-100 transition-colors"
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                  Add More
-                </button>
-              </div>
-
-              <div className="space-y-2">
-                {formData.hobbies.map((hobby, index) => (
-                  <div key={index} className="flex items-end gap-2">
-                    <Input
-                      label={index === 0 ? 'Hobby 1' : `Hobby ${index + 1}`}
-                      value={hobby}
-                      onChange={(e) => handleHobbyChange(index, e.target.value)}
-                      placeholder={index === 0 ? "e.g. Football" : "e.g. Chess"}
-                      className="flex-1"
-                    />
-                    {formData.hobbies.length > 1 && (
-                      <button
-                        type="button"
-                        onClick={() => removeHobbyField(index)}
-                        className="flex-shrink-0 p-3 text-red-500 bg-red-50 rounded-lg hover:bg-red-100 transition-colors mb-1"
-                        title="Remove hobby"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
-                    )}
-                  </div>
-                ))}
-              </div>
-
-              <p className="text-xs text-gray-500 italic">
-                💡 Tip: Add multiple hobbies like Football, Chess, Coding, Reading, etc.
-              </p>
+              <Input
+                label="Hobby / Interests"
+                name="hobby"
+                value={formData.hobby}
+                onChange={handleChange}
+                placeholder="Type any hobby, such as Cricket, Drawing, Coding, Reading..."
+              />
             </div>
           </div>
 
-          {/* Section 4: Parent & Friends */}
           <div className="space-y-4">
             <h4 className="text-xs font-bold uppercase tracking-wider text-gold-700 flex items-center gap-2">
               <Phone className="w-4 h-4" /> 4. Parent Details & Friends
@@ -357,7 +285,6 @@ export const AddStudent = () => {
             </div>
           </div>
 
-          {/* Action Buttons */}
           <div className="flex items-center justify-end gap-3 pt-6 border-t border-gray-100">
             <Link to="/students">
               <Button variant="secondary" size="lg">
