@@ -67,12 +67,6 @@ export const LandingPage = () => {
     }
   };
 
-  const handleQuickFill = (demoEmail, demoPass) => {
-    setEmail(demoEmail);
-    setPassword(demoPass);
-    setError('');
-  };
-
   return (
     <div className="min-h-screen bg-[#F7F8FA] subtle-gold-mesh flex flex-col justify-between items-center selection:bg-gold-500 selection:text-white relative overflow-hidden px-4 py-8">
       {/* Dynamic Background Ambient Orbs */}
@@ -190,7 +184,7 @@ export const LandingPage = () => {
                       onChange={(e) => setFullName(e.target.value)}
                       placeholder="e.g. Shrey Sharma"
                       required
-                      className="w-full h-[50px] pl-11 pr-4 bg-white border border-[#DADADA] focus:border-gold-500 focus:ring-4 focus:ring-gold-100 rounded-[14px] text-sm text-[#4A4A4A] placeholder-gray-400 focus:outline-none transition-all shadow-sm"
+                      className="w-full h-[50px] pl-11 pr-4 bg-white border border-[#DADADA] focus:border-gold-500 focus:ring-4 focus:ring-gold-100 rounded-[14px] text-sm text-[#4A4A4A] placeholder-gray-400"
                     />
                   </div>
                 </div>
@@ -244,9 +238,9 @@ export const LandingPage = () => {
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="leader@harisaurabh.com"
+                  placeholder="your.email@hostel.in"
                   required
-                  className="w-full h-[50px] pl-11 pr-4 bg-white border border-[#DADADA] focus:border-gold-500 focus:ring-4 focus:ring-gold-100 rounded-[14px] text-sm text-[#4A4A4A] placeholder-gray-400 focus:outline-none transition-all shadow-sm"
+                  className="w-full h-[50px] pl-11 pr-4 bg-white border border-[#DADADA] focus:border-gold-500 focus:ring-4 focus:ring-gold-100 rounded-[14px] text-sm text-[#4A4A4A] placeholder-gray-400"
                 />
               </div>
             </div>
@@ -275,7 +269,7 @@ export const LandingPage = () => {
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Enter your password"
                   required
-                  className="w-full h-[50px] pl-11 pr-12 bg-white border border-[#DADADA] focus:border-gold-500 focus:ring-4 focus:ring-gold-100 rounded-[14px] text-sm text-[#4A4A4A] placeholder-gray-400 focus:outline-none transition-all shadow-sm"
+                  className="w-full h-[50px] pl-11 pr-12 bg-white border border-[#DADADA] focus:border-gold-500 focus:ring-4 focus:ring-gold-100 rounded-[14px] text-sm text-[#4A4A4A] placeholder-gray-400"
                 />
                 <button
                   type="button"
@@ -298,38 +292,6 @@ export const LandingPage = () => {
               {mode === 'login' ? 'Sign In to Portal' : 'Save & Enter Portal'}
             </Button>
           </form>
-
-          {/* Quick Default Credentials Box */}
-          <div className="mt-6 pt-5 border-t border-gray-100 space-y-2.5">
-            <div className="flex items-center justify-between text-xs">
-              <span className="font-bold text-gray-600 flex items-center gap-1.5">
-                <KeyRound className="w-3.5 h-3.5 text-gold-600" />
-                Default Leader Logins:
-              </span>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px]">
-              <button
-                type="button"
-                onClick={() => handleQuickFill('admin@harisaurabh.com', 'admin123')}
-                className="p-2.5 text-left rounded-xl bg-gold-50/80 border border-gold-200/80 hover:bg-gold-100/80 transition-colors"
-              >
-                <div className="font-bold text-gold-900">👑 Main Leader</div>
-                <div className="text-gray-500">ID: admin@harisaurabh.com</div>
-                <div className="text-gold-700 font-semibold">Pass: admin123</div>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => handleQuickFill('leader.floor2@harisaurabh.com', 'leader123')}
-                className="p-2.5 text-left rounded-xl bg-gray-50 border border-gray-200 hover:bg-gray-100 transition-colors"
-              >
-                <div className="font-bold text-gray-800">🏢 Floor 2 Leader</div>
-                <div className="text-gray-500">ID: leader.floor2@harisaurabh.com</div>
-                <div className="text-gray-700 font-semibold">Pass: leader123</div>
-              </button>
-            </div>
-          </div>
         </motion.div>
       </main>
 
