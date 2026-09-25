@@ -1,6 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { authService } from '../services/authService';
-import { ROLES } from '../utils/constants';
 
 const AuthContext = createContext();
 
@@ -31,13 +30,25 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const register = async (data) => {
+    setLoading(true);
+    try {
+      const response = await authService.register(data);
+      const authenticatedUser = response.user || response;
+      setUser(authenticatedUser);
+      return authenticatedUser;
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const logout = () => {
     authService.logout();
     setUser(null);
   };
 
-  const isMainLeader = user?.role === ROLES.MAIN_LEADER;
-  const isWingLeader = user?.role === ROLES.WING_LEADER;
+  const isMainLeader = user?.role === 'MAIN_LEADER';
+  const isWingLeader = user?.role === 'WING_LEADER';
 
   return (
     <AuthContext.Provider
@@ -45,6 +56,7 @@ export const AuthProvider = ({ children }) => {
         user,
         loading,
         login,
+        register,
         logout,
         isMainLeader,
         isWingLeader,

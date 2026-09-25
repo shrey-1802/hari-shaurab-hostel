@@ -3,7 +3,6 @@ import { useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { AnimatedLogo } from '../components/ui/AnimatedLogo';
 import { Button } from '../components/ui/Button';
-import { Input } from '../components/ui/Input';
 import { useAuth } from '../context/AuthContext';
 import {
   Mail,
@@ -12,35 +11,66 @@ import {
   ShieldCheck,
   Eye,
   EyeOff,
+  User,
   Sparkles,
+  Building2,
+  KeyRound,
+  CheckCircle2,
 } from 'lucide-react';
 
 export const LandingPage = () => {
-  const { login } = useAuth();
+  const { login, register } = useAuth();
   const navigate = useNavigate();
 
+  const [mode, setMode] = useState('login'); // 'login' | 'register'
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [fullName, setFullName] = useState('');
+  const [role, setRole] = useState('MAIN_LEADER');
+  const [assignedFloor, setAssignedFloor] = useState(2);
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const handleLogin = async (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setError('');
+
     if (!email || !password) {
-      setError('Please enter both email and password');
+      setError('Please fill in both email and password.');
       return;
     }
-    setError('');
+
     setLoading(true);
     try {
-      await login(email, password);
+      if (mode === 'login') {
+        await login(email, password);
+      } else {
+        if (!fullName) {
+          setError('Please enter your full name.');
+          setLoading(false);
+          return;
+        }
+        await register({
+          full_name: fullName,
+          email,
+          password,
+          role,
+          assigned_floor: role === 'WING_LEADER' ? Number(assignedFloor) : null,
+        });
+      }
       navigate('/dashboard');
     } catch (err) {
-      setError(err?.message || 'Invalid email or password');
+      setError(err?.message || 'Authentication error. Please try again.');
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleQuickFill = (demoEmail, demoPass) => {
+    setEmail(demoEmail);
+    setPassword(demoPass);
+    setError('');
   };
 
   return (
@@ -69,8 +99,8 @@ export const LandingPage = () => {
         </div>
       </motion.header>
 
-      {/* Central Focused Area: Animated Logo & Sign-In Form */}
-      <main className="w-full max-w-[440px] flex flex-col items-center justify-center my-auto py-6 z-10">
+      {/* Central Focused Area: Animated Logo & Sign-In/Register Form */}
+      <main className="w-full max-w-[450px] flex flex-col items-center justify-center my-auto py-6 z-10">
         {/* Animated Brand Logo */}
         <motion.div
           initial={{ opacity: 0, scale: 0.9, y: 15 }}
@@ -81,20 +111,55 @@ export const LandingPage = () => {
           <AnimatedLogo size="hero" showText={false} animated={true} />
         </motion.div>
 
-        {/* 420px Executive Glassmorphism Login Card */}
+        {/* 420px Executive Glassmorphism Card */}
         <motion.div
           initial={{ opacity: 0, y: 25 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.15 }}
           className="w-full bg-white/90 backdrop-blur-xl rounded-[28px] border border-gold-200/90 shadow-soft-lg p-7 sm:p-9 relative overflow-hidden"
         >
-          {/* Subtle gold accent light in corner */}
           <div className="absolute top-0 right-0 w-32 h-32 bg-gold-200/30 rounded-full blur-2xl pointer-events-none" />
 
+          {/* Mode Tabs: Sign In / Create Password */}
+          <div className="flex p-1 bg-gray-100/90 rounded-2xl mb-6">
+            <button
+              type="button"
+              onClick={() => {
+                setMode('login');
+                setError('');
+              }}
+              className={`flex-1 py-2.5 text-xs font-bold rounded-xl transition-all ${
+                mode === 'login'
+                  ? 'bg-white text-[#4A4A4A] shadow-sm'
+                  : 'text-gray-500 hover:text-[#4A4A4A]'
+              }`}
+            >
+              Leader Sign In
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setMode('register');
+                setError('');
+              }}
+              className={`flex-1 py-2.5 text-xs font-bold rounded-xl transition-all ${
+                mode === 'register'
+                  ? 'bg-white text-[#4A4A4A] shadow-sm'
+                  : 'text-gray-500 hover:text-[#4A4A4A]'
+              }`}
+            >
+              Set New Password
+            </button>
+          </div>
+
           <div className="text-center mb-6">
-            <h2 className="text-xl font-bold text-[#4A4A4A]">Leader Sign In</h2>
+            <h2 className="text-xl font-bold text-[#4A4A4A]">
+              {mode === 'login' ? 'Portal Authentication' : 'Create Custom Password'}
+            </h2>
             <p className="text-xs text-gray-500 mt-1">
-              Enter your credentials to access your administration dashboard
+              {mode === 'login'
+                ? 'Enter your leader email & password to access dashboard'
+                : 'Create your personalized leader account & password'}
             </p>
           </div>
 
@@ -108,10 +173,68 @@ export const LandingPage = () => {
             </motion.div>
           )}
 
-          <form onSubmit={handleLogin} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {mode === 'register' && (
+              <>
+                <div>
+                  <label className="block text-xs font-semibold text-[#4A4A4A] uppercase tracking-wider mb-1.5">
+                    Full Name *
+                  </label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400">
+                      <User className="h-5 w-5" />
+                    </div>
+                    <input
+                      type="text"
+                      value={fullName}
+                      onChange={(e) => setFullName(e.target.value)}
+                      placeholder="e.g. Shrey Sharma"
+                      required
+                      className="w-full h-[50px] pl-11 pr-4 bg-white border border-[#DADADA] focus:border-gold-500 focus:ring-4 focus:ring-gold-100 rounded-[14px] text-sm text-[#4A4A4A] placeholder-gray-400 focus:outline-none transition-all shadow-sm"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-[#4A4A4A] uppercase tracking-wider mb-1.5">
+                      Role
+                    </label>
+                    <select
+                      value={role}
+                      onChange={(e) => setRole(e.target.value)}
+                      className="w-full h-[50px] px-3 bg-white border border-[#DADADA] focus:border-gold-500 rounded-[14px] text-xs font-bold text-[#4A4A4A] focus:outline-none shadow-sm"
+                    >
+                      <option value="MAIN_LEADER">Main Leader</option>
+                      <option value="WING_LEADER">Wing Leader</option>
+                    </select>
+                  </div>
+
+                  {role === 'WING_LEADER' && (
+                    <div>
+                      <label className="block text-xs font-semibold text-[#4A4A4A] uppercase tracking-wider mb-1.5">
+                        Floor
+                      </label>
+                      <select
+                        value={assignedFloor}
+                        onChange={(e) => setAssignedFloor(e.target.value)}
+                        className="w-full h-[50px] px-3 bg-white border border-[#DADADA] focus:border-gold-500 rounded-[14px] text-xs font-bold text-[#4A4A4A] focus:outline-none shadow-sm"
+                      >
+                        {[1, 2, 3, 4, 5].map((f) => (
+                          <option key={f} value={f}>
+                            Floor {f}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
+
             <div>
-              <label className="block text-xs font-semibold text-[#4A4A4A] uppercase tracking-wider mb-2">
-                Email Address
+              <label className="block text-xs font-semibold text-[#4A4A4A] uppercase tracking-wider mb-1.5">
+                Email Address / ID *
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400">
@@ -123,22 +246,24 @@ export const LandingPage = () => {
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="leader@harisaurabh.com"
                   required
-                  className="w-full h-[52px] pl-11 pr-4 bg-white border border-[#DADADA] focus:border-gold-500 focus:ring-4 focus:ring-gold-100 rounded-[14px] text-sm text-[#4A4A4A] placeholder-gray-400 focus:outline-none transition-all shadow-sm"
+                  className="w-full h-[50px] pl-11 pr-4 bg-white border border-[#DADADA] focus:border-gold-500 focus:ring-4 focus:ring-gold-100 rounded-[14px] text-sm text-[#4A4A4A] placeholder-gray-400 focus:outline-none transition-all shadow-sm"
                 />
               </div>
             </div>
 
             <div>
-              <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center justify-between mb-1.5">
                 <label className="block text-xs font-semibold text-[#4A4A4A] uppercase tracking-wider">
-                  Password
+                  {mode === 'register' ? 'Set Your Password *' : 'Password *'}
                 </label>
-                <Link
-                  to="/forgot-password"
-                  className="text-xs font-semibold text-gold-600 hover:text-gold-700 transition-colors"
-                >
-                  Forgot?
-                </Link>
+                {mode === 'login' && (
+                  <Link
+                    to="/forgot-password"
+                    className="text-xs font-semibold text-gold-600 hover:text-gold-700 transition-colors"
+                  >
+                    Forgot?
+                  </Link>
+                )}
               </div>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400">
@@ -148,9 +273,9 @@ export const LandingPage = () => {
                   type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
+                  placeholder="Enter your password"
                   required
-                  className="w-full h-[52px] pl-11 pr-12 bg-white border border-[#DADADA] focus:border-gold-500 focus:ring-4 focus:ring-gold-100 rounded-[14px] text-sm text-[#4A4A4A] placeholder-gray-400 focus:outline-none transition-all shadow-sm"
+                  className="w-full h-[50px] pl-11 pr-12 bg-white border border-[#DADADA] focus:border-gold-500 focus:ring-4 focus:ring-gold-100 rounded-[14px] text-sm text-[#4A4A4A] placeholder-gray-400 focus:outline-none transition-all shadow-sm"
                 />
                 <button
                   type="button"
@@ -167,16 +292,43 @@ export const LandingPage = () => {
               variant="primary"
               size="lg"
               isLoading={loading}
-              className="w-full mt-3 h-[52px] text-base font-bold shadow-soft-md"
+              className="w-full mt-2 h-[52px] text-base font-bold shadow-soft-md"
               icon={ArrowRight}
             >
-              Sign In to Portal
+              {mode === 'login' ? 'Sign In to Portal' : 'Save & Enter Portal'}
             </Button>
           </form>
 
-          <div className="mt-6 pt-5 border-t border-gray-100 flex items-center justify-center gap-1.5 text-xs text-gray-400">
-            <Sparkles className="w-3.5 h-3.5 text-gold-500" />
-            <span>Authorized Leader & Staff Access Only</span>
+          {/* Quick Default Credentials Box */}
+          <div className="mt-6 pt-5 border-t border-gray-100 space-y-2.5">
+            <div className="flex items-center justify-between text-xs">
+              <span className="font-bold text-gray-600 flex items-center gap-1.5">
+                <KeyRound className="w-3.5 h-3.5 text-gold-600" />
+                Default Leader Logins:
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px]">
+              <button
+                type="button"
+                onClick={() => handleQuickFill('admin@harisaurabh.com', 'admin123')}
+                className="p-2.5 text-left rounded-xl bg-gold-50/80 border border-gold-200/80 hover:bg-gold-100/80 transition-colors"
+              >
+                <div className="font-bold text-gold-900">👑 Main Leader</div>
+                <div className="text-gray-500">ID: admin@harisaurabh.com</div>
+                <div className="text-gold-700 font-semibold">Pass: admin123</div>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleQuickFill('leader.floor2@harisaurabh.com', 'leader123')}
+                className="p-2.5 text-left rounded-xl bg-gray-50 border border-gray-200 hover:bg-gray-100 transition-colors"
+              >
+                <div className="font-bold text-gray-800">🏢 Floor 2 Leader</div>
+                <div className="text-gray-500">ID: leader.floor2@harisaurabh.com</div>
+                <div className="text-gray-700 font-semibold">Pass: leader123</div>
+              </button>
+            </div>
           </div>
         </motion.div>
       </main>
