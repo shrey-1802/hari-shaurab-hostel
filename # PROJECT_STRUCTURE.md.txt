@@ -1,0 +1,377 @@
+# PROJECT_STRUCTURE.md
+# Hari-Saurabh Hostel Management System
+## Enterprise Project Folder Structure
+
+---
+
+# Root Structure
+
+```bash
+hostel-management-system/
+│
+├── frontend/
+├── backend/
+├── database/
+├── docs/
+├── deployment/
+├── scripts/
+├── .github/
+├── docker-compose.yml
+├── README.md
+└── .env.example
+```
+
+---
+
+# FRONTEND STRUCTURE
+
+```bash
+frontend/
+│
+├── public/
+│   ├── logo.png
+│   ├── favicon.ico
+│   └── images/
+│
+├── src/
+│
+│   ├── assets/
+│   │   ├── icons/
+│   │   ├── images/
+│   │   └── illustrations/
+│
+│   ├── components/
+│   │
+│   ├── ui/
+│   │   ├── buttons/
+│   │   ├── cards/
+│   │   ├── forms/
+│   │   ├── inputs/
+│   │   ├── modals/
+│   │   ├── tables/
+│   │   ├── badges/
+│   │   └── loaders/
+│   │
+│   ├── layout/
+│   │   ├── Navbar.jsx
+│   │   ├── Sidebar.jsx
+│   │   ├── Footer.jsx
+│   │   └── DashboardLayout.jsx
+│   │
+│   ├── pages/
+│   │
+│   ├── auth/
+│   │   ├── Login.jsx
+│   │   ├── ForgotPassword.jsx
+│   │   └── ResetPassword.jsx
+│   │
+│   ├── dashboard/
+│   │   ├── MainLeaderDashboard.jsx
+│   │   └── WingLeaderDashboard.jsx
+│   │
+│   ├── students/
+│   │   ├── StudentList.jsx
+│   │   ├── StudentCard.jsx
+│   │   ├── StudentProfile.jsx
+│   │   ├── AddStudent.jsx
+│   │   └── EditStudent.jsx
+│   │
+│   ├── birthdays/
+│   │   ├── BirthdayDashboard.jsx
+│   │   └── UpcomingBirthdays.jsx
+│   │
+│   ├── notifications/
+│   │   └── NotificationCenter.jsx
+│   │
+│   ├── settings/
+│   │   └── Settings.jsx
+│
+│   ├── hooks/
+│   │   ├── useAuth.js
+│   │   ├── useStudents.js
+│   │   ├── useNotifications.js
+│   │   └── useBirthdays.js
+│
+│   ├── services/
+│   │   ├── api.js
+│   │   ├── authService.js
+│   │   ├── studentService.js
+│   │   ├── birthdayService.js
+│   │   └── notificationService.js
+│
+│   ├── context/
+│   │   ├── AuthContext.jsx
+│   │   └── ThemeContext.jsx
+│
+│   ├── routes/
+│   │   ├── AppRoutes.jsx
+│   │   ├── ProtectedRoute.jsx
+│   │   └── RoleRoute.jsx
+│
+│   ├── utils/
+│   │   ├── constants.js
+│   │   ├── helpers.js
+│   │   └── validators.js
+│
+│   ├── styles/
+│   │   ├── globals.css
+│   │   └── animations.css
+│
+│   ├── App.jsx
+│   ├── main.jsx
+│   └── vite.config.js
+│
+├── package.json
+└── tailwind.config.js
+```
+
+---
+
+# BACKEND STRUCTURE
+
+```bash
+backend/
+│
+├── app/
+│
+│   ├── api/
+│   │
+│   │   ├── auth/
+│   │   │   └── routes.py
+│   │
+│   │   ├── students/
+│   │   │   └── routes.py
+│   │
+│   │   ├── birthdays/
+│   │   │   └── routes.py
+│   │
+│   │   ├── notifications/
+│   │   │   └── routes.py
+│   │
+│   │   ├── dashboard/
+│   │   │   └── routes.py
+│   │
+│   │   └── users/
+│   │       └── routes.py
+│
+│   ├── core/
+│   │   ├── config.py
+│   │   ├── security.py
+│   │   ├── database.py
+│   │   └── dependencies.py
+│
+│   ├── models/
+│   │   ├── user.py
+│   │   ├── student.py
+│   │   ├── notification.py
+│   │   ├── birthday_log.py
+│   │   └── whatsapp_log.py
+│
+│   ├── schemas/
+│   │   ├── user.py
+│   │   ├── auth.py
+│   │   ├── student.py
+│   │   ├── notification.py
+│   │   └── dashboard.py
+│
+│   ├── services/
+│   │   ├── auth_service.py
+│   │   ├── student_service.py
+│   │   ├── birthday_service.py
+│   │   ├── whatsapp_service.py
+│   │   └── notification_service.py
+│
+│   ├── middleware/
+│   │   ├── auth_middleware.py
+│   │   ├── role_middleware.py
+│   │   └── audit_middleware.py
+│
+│   ├── scheduler/
+│   │   ├── birthday_reminder.py
+│   │   ├── birthday_greeting.py
+│   │   └── scheduler.py
+│
+│   ├── utils/
+│   │   ├── logger.py
+│   │   ├── helpers.py
+│   │   └── validators.py
+│
+│   ├── main.py
+│   └── __init__.py
+│
+├── tests/
+│   ├── test_auth.py
+│   ├── test_students.py
+│   └── test_birthdays.py
+│
+├── alembic/
+│
+├── requirements.txt
+├── Dockerfile
+└── .env
+```
+
+---
+
+# DATABASE STRUCTURE
+
+```bash
+database/
+│
+├── migrations/
+│
+├── schema/
+│   ├── users.sql
+│   ├── students.sql
+│   ├── notifications.sql
+│   ├── birthday_logs.sql
+│   └── whatsapp_logs.sql
+│
+├── seed/
+│   ├── leaders.sql
+│   └── demo_students.sql
+│
+└── rls/
+    ├── users_policy.sql
+    └── students_policy.sql
+```
+
+---
+
+# DOCUMENTATION STRUCTURE
+
+```bash
+docs/
+│
+├── SRS.md
+├── DATABASE_SCHEMA.md
+├── API_DOCUMENTATION.md
+├── UI_UX_GUIDELINES.md
+├── PROJECT_STRUCTURE.md
+├── DEPLOYMENT_GUIDE.md
+└── SYSTEM_ARCHITECTURE.md
+```
+
+---
+
+# DEPLOYMENT STRUCTURE
+
+```bash
+deployment/
+│
+├── vercel/
+│   └── vercel.json
+│
+├── railway/
+│   └── railway.json
+│
+├── docker/
+│   ├── frontend.Dockerfile
+│   └── backend.Dockerfile
+│
+└── nginx/
+    └── nginx.conf
+```
+
+---
+
+# SUPABASE STORAGE STRUCTURE
+
+```bash
+student-profiles/
+│
+├── student-id-1/
+│   └── profile.jpg
+│
+├── student-id-2/
+│   └── profile.jpg
+│
+└── student-id-n/
+```
+
+```bash
+student-documents/
+│
+├── student-id-1/
+│   ├── result.pdf
+│   ├── id-card.pdf
+│   └── other-docs.pdf
+```
+
+---
+
+# FUTURE MODULE STRUCTURE
+
+```bash
+modules/
+│
+├── attendance/
+├── visitor-management/
+├── leave-management/
+├── complaints/
+├── events/
+├── hostel-fees/
+└── qr-id-system/
+```
+
+---
+
+# RECOMMENDED DEVELOPMENT ORDER
+
+Phase 1
+- Authentication
+- Roles
+- Dashboard Layout
+
+Phase 2
+- Student CRUD
+- Image Upload
+
+Phase 3
+- Student Directory
+- Student Profile
+
+Phase 4
+- Notifications
+- Birthday Module
+
+Phase 5
+- WhatsApp Automation
+
+Phase 6
+- Reports
+- Analytics
+
+Phase 7
+- Deployment
+
+---
+
+# FINAL ARCHITECTURE
+
+React Frontend
+↓
+FastAPI Backend
+↓
+Supabase PostgreSQL
+↓
+Supabase Storage
+
+Additional Services:
+
+APScheduler
+↓
+Birthday Jobs
+
+WhatsApp Cloud API
+↓
+Auto Greetings
+
+JWT Authentication
+↓
+Role-Based Security
+
+RLS Policies
+↓
+Floor-Based Access Control
+```

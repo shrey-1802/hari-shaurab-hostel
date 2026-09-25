@@ -1,0 +1,53 @@
+/* Keyframes for Hari-Saurabh Hostel UI */
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-12px) rotate(0.5deg);
+  }
+}
+
+@keyframes pulseGoldGlow {
+  0%, 100% {
+    box-shadow: 0 0 15px rgba(230, 162, 60, 0.25), 0 0 30px rgba(242, 196, 109, 0.15);
+  }
+  50% {
+    box-shadow: 0 0 30px rgba(230, 162, 60, 0.45), 0 0 60px rgba(242, 196, 109, 0.3);
+  }
+}
+
+@keyframes logoSunburst {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes badgeFloat {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
+
+.animate-float-slow {
+  animation: float 7s ease-in-out infinite;
+}
+
+.animate-gold-pulse {
+  animation: pulseGoldGlow 3s ease-in-out infinite;
+}
+
+.animate-badge-float {
+  animation: badgeFloat 4s ease-in-out infinite;
+}
+
+.animate-spin-ultra-slow {
+  animation: logoSunburst 25s linear infinite;
+}

@@ -1,0 +1,94 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --primary-gold: #E6A23C;
+  --secondary-gold: #F2C46D;
+  --dark-gray: #4A4A4A;
+  --bg-color: #F7F8FA;
+  --border-color: #DADADA;
+  --card-radius: 24px;
+}
+
+@layer base {
+  * {
+    border-color: #DADADA;
+  }
+  
+  body {
+    background-color: #F7F8FA;
+    color: #4A4A4A;
+    font-family: 'Poppins', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    overflow-x: hidden;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Poppins', sans-serif;
+    color: #4A4A4A;
+    font-weight: 700;
+  }
+}
+
+/* Custom Gold Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #F1F2F5;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #E6A23C;
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #C98522;
+}
+
+/* Glassmorphism Styles */
+.glass-card {
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(230, 162, 60, 0.18);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.06);
+}
+
+.glass-card-hover {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.glass-card-hover:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 20px 48px rgba(230, 162, 60, 0.15);
+  border-color: rgba(230, 162, 60, 0.4);
+}
+
+.gold-gradient-bg {
+  background: linear-gradient(135deg, #E6A23C 0%, #F2C46D 100%);
+}
+
+.gold-gradient-text {
+  background: linear-gradient(135deg, #D4881A 0%, #E6A23C 50%, #B87314 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.subtle-gold-mesh {
+  background-color: #F7F8FA;
+  background-image: 
+    radial-gradient(at 15% 15%, rgba(242, 196, 109, 0.12) 0px, transparent 50%),
+    radial-gradient(at 85% 20%, rgba(230, 162, 60, 0.08) 0px, transparent 50%),
+    radial-gradient(at 50% 80%, rgba(242, 196, 109, 0.1) 0px, transparent 60%);
+}
+
+/* Shimmer animation utility */
+.shimmer-effect {
+  background: linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.6) 50%, rgba(255,255,255,0) 100%);
+  background-size: 200% 100%;
+  animation: shimmer 2s infinite;
+}
