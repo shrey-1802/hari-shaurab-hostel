@@ -18,6 +18,8 @@ import {
   Calendar,
   Phone,
   Image,
+  Plus,
+  X,
 } from 'lucide-react';
 
 export const AddStudent = () => {
@@ -36,7 +38,7 @@ export const AddStudent = () => {
     college_name: COLLEGES[0],
     department: DEPARTMENTS[0],
     semester_result: '',
-    hobby: '',
+    hobbies: [''],
     hostel_friends: '',
     non_hostel_friends: '',
     floor_number: isMainLeader ? 4 : user?.assigned_floor || 4,
@@ -48,6 +50,23 @@ export const AddStudent = () => {
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleHobbyChange = (index, value) => {
+    const newHobbies = [...formData.hobbies];
+    newHobbies[index] = value;
+    setFormData((prev) => ({ ...prev, hobbies: newHobbies }));
+  };
+
+  const addHobbyField = () => {
+    setFormData((prev) => ({ ...prev, hobbies: [...prev.hobbies, ''] }));
+  };
+
+  const removeHobbyField = (index) => {
+    setFormData((prev) => ({
+      ...prev,
+      hobbies: prev.hobbies.filter((_, i) => i !== index),
+    }));
   };
 
   const handleImageChange = (e) => {
@@ -65,7 +84,14 @@ export const AddStudent = () => {
     e.preventDefault();
     setLoading(true);
     try {
-      const created = await addStudent(formData);
+      // Convert hobbies array to comma-separated string for backend
+      const submitData = {
+        ...formData,
+        hobby: formData.hobbies.filter((h) => h.trim()).join(', '),
+      };
+      delete submitData.hobbies;
+      
+      const created = await addStudent(submitData);
       showToast(`${formData.full_name} enrolled successfully!`, 'success');
       navigate(`/student/${created.id}`);
     } catch (error) {
@@ -244,14 +270,51 @@ export const AddStudent = () => {
                 onChange={handleChange}
                 placeholder="e.g. 8.75 CGPA (4th Sem)"
               />
+            </div>
 
-              <Input
-                label="Hobby & Interests"
-                name="hobby"
-                value={formData.hobby}
-                onChange={handleChange}
-                placeholder="e.g. Football, Chess, Coding"
-              />
+            {/* Hobbies & Interests - Multiple Fields */}
+            <div className="space-y-3 pt-4 border-t border-gray-100">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-semibold text-[#4A4A4A] uppercase tracking-wider">
+                  🎯 Hobbies & Interests
+                </label>
+                <button
+                  type="button"
+                  onClick={addHobbyField}
+                  className="inline-flex items-center gap-1 text-xs font-bold text-gold-600 bg-gold-50 px-3 py-1.5 rounded-lg border border-gold-200 hover:bg-gold-100 transition-colors"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  Add More
+                </button>
+              </div>
+
+              <div className="space-y-2">
+                {formData.hobbies.map((hobby, index) => (
+                  <div key={index} className="flex items-end gap-2">
+                    <Input
+                      label={index === 0 ? 'Hobby 1' : `Hobby ${index + 1}`}
+                      value={hobby}
+                      onChange={(e) => handleHobbyChange(index, e.target.value)}
+                      placeholder={index === 0 ? "e.g. Football" : "e.g. Chess"}
+                      className="flex-1"
+                    />
+                    {formData.hobbies.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => removeHobbyField(index)}
+                        className="flex-shrink-0 p-3 text-red-500 bg-red-50 rounded-lg hover:bg-red-100 transition-colors mb-1"
+                        title="Remove hobby"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              <p className="text-xs text-gray-500 italic">
+                💡 Tip: Add multiple hobbies like Football, Chess, Coding, Reading, etc.
+              </p>
             </div>
           </div>
 
