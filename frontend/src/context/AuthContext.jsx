@@ -1,13 +1,13 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { authService } from '../services/authService';
-import { DEMO_USERS, ROLES } from '../utils/constants';
+import { ROLES } from '../utils/constants';
 
 const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(() => {
     const saved = localStorage.getItem('hs_current_user');
-    return saved ? JSON.parse(saved) : DEMO_USERS.mainLeader;
+    return saved ? JSON.parse(saved) : null;
   });
   const [loading, setLoading] = useState(false);
 
@@ -31,16 +31,6 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const switchRole = (roleType, floor = null) => {
-    if (roleType === ROLES.MAIN_LEADER) {
-      setUser(DEMO_USERS.mainLeader);
-    } else if (floor === 3) {
-      setUser(DEMO_USERS.wingLeaderFloor3);
-    } else {
-      setUser(DEMO_USERS.wingLeaderFloor2);
-    }
-  };
-
   const logout = () => {
     authService.logout();
     setUser(null);
@@ -56,7 +46,6 @@ export const AuthProvider = ({ children }) => {
         loading,
         login,
         logout,
-        switchRole,
         isMainLeader,
         isWingLeader,
         assignedFloor: user?.assigned_floor || null,
