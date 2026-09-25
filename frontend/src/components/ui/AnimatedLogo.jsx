@@ -1,5 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
+import logoImg from '../../assets/logo.png';
 
 export const AnimatedLogo = ({
   size = 'large', // 'small' | 'medium' | 'large' | 'hero'
@@ -70,13 +71,9 @@ export const AnimatedLogo = ({
         className={`relative flex items-center justify-center rounded-3xl bg-white/90 backdrop-blur-md shadow-soft-md border border-gold-200/80 transition-all duration-300 ${containerSizes[size] || 'p-4'}`}
       >
         <img
-          src="/logo.png"
+          src={logoImg}
           alt="Hari-Saurabh Hostel Logo"
           className={`${sizeClasses[size] || sizeClasses.medium} object-contain transition-transform duration-300`}
-          onError={(e) => {
-            // If image path needs fallback
-            e.target.src = '/public/logo.png';
-          }}
         />
 
         {/* Floating Sparkle Dot */}

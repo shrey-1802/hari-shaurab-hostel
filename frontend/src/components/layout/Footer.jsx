@@ -1,6 +1,7 @@
 import React from 'react';
 import { Heart, Building2, Phone, Mail, ShieldCheck } from 'lucide-react';
 import { AnimatedLogo } from '../ui/AnimatedLogo';
+import logoImg from '../../assets/logo.png';
 
 export const Footer = () => {
   return (
@@ -10,7 +11,7 @@ export const Footer = () => {
           {/* Logo & About */}
           <div className="md:col-span-2 space-y-4">
             <div className="flex items-center gap-3">
-              <img src="/logo.png" alt="Hari-Saurabh Hostel" className="h-12 w-auto" />
+              <img src={logoImg} alt="Hari-Saurabh Hostel" className="h-12 w-auto" />
               <div>
                 <h4 className="text-lg font-bold text-[#4A4A4A]">HARI-SAURABH HOSTEL</h4>
                 <p className="text-xs text-gold-600 font-semibold tracking-wider uppercase">Smart Management Platform</p>

@@ -5,6 +5,7 @@ import { useNotifications } from '../../context/NotificationContext';
 import { AnimatedLogo } from '../ui/AnimatedLogo';
 import { Bell, User, LogOut, ShieldCheck, Sparkles, PlusCircle } from 'lucide-react';
 import { Button } from '../ui/Button';
+import logoImg from '../../assets/logo.png';
 
 export const Navbar = ({ isLanding = false }) => {
   const { user, logout, isMainLeader } = useAuth();
@@ -24,7 +25,7 @@ export const Navbar = ({ isLanding = false }) => {
         <Link to={user ? '/dashboard' : '/'} className="flex items-center gap-3 group">
           <div className="p-1 rounded-xl bg-gold-50 group-hover:bg-gold-100 transition-colors">
             <img
-              src="/logo.png"
+              src={logoImg}
               alt="Hari-Saurabh Hostel Logo"
               className="h-11 w-auto object-contain transition-transform duration-300 group-hover:scale-105"
             />
