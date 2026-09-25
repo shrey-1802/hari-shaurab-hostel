@@ -61,7 +61,7 @@ export const StudentList = () => {
           <h2 className="text-2xl sm:text-3xl font-extrabold text-[#4A4A4A]">Student Directory</h2>
           <p className="text-xs sm:text-sm text-gray-500 mt-1">
             {isMainLeader
-              ? `Showing ${visibleStudents.length} students across all 5 hostel floors`
+              ? `Showing ${visibleStudents.length} students across all hostel floors`
               : `Showing ${visibleStudents.length} assigned students on Floor ${user?.assigned_floor}`}
           </p>
         </div>
@@ -97,9 +97,9 @@ export const StudentList = () => {
               <select
                 value={selectedFloor}
                 onChange={(e) => setSelectedFloor(e.target.value)}
-                className="w-full h-[52px] px-4 bg-white border border-[#DADADA] rounded-[14px] text-sm text-[#4A4A4A] focus:outline-none focus:border-gold-500 focus:ring-4 focus:ring-gold-100 font-semibold"
+                className="w-full h-[52px] px-4 bg-white border border-[#DADADA] rounded-[14px] text-sm text-[#4A4A4A] focus:outline-none focus:border-gold-500 focus:ring-4 focus:ring-gold-100 font-medium"
               >
-                <option value="ALL">🏢 All Floors (1-5)</option>
+                <option value="ALL">🏢 All Floors</option>
                 {FLOORS.map((f) => (
                   <option key={f} value={f}>
                     Floor {f} Wing
@@ -120,7 +120,7 @@ export const StudentList = () => {
             <select
               value={selectedDept}
               onChange={(e) => setSelectedDept(e.target.value)}
-              className="w-full h-[52px] px-4 bg-white border border-[#DADADA] rounded-[14px] text-sm text-[#4A4A4A] focus:outline-none focus:border-gold-500 focus:ring-4 focus:ring-gold-100 font-semibold truncate"
+              className="w-full h-[52px] px-4 bg-white border border-[#DADADA] rounded-[14px] text-sm text-[#4A4A4A] focus:outline-none focus:border-gold-500 focus:ring-4 focus:ring-gold-100 font-medium"
             >
               <option value="ALL">🎓 All Departments</option>
               {DEPARTMENTS.map((dept) => (
