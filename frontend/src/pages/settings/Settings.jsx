@@ -67,12 +67,12 @@ export const Settings = () => {
       <Card className="border-l-4 border-l-gold-500">
         <div className="flex items-center gap-3 mb-4">
           <Server className="w-5 h-5 text-gold-600" />
-          <h3 className="text-base font-bold text-[#4A4A4A]">Render Backend & Vercel Deployment Linkage</h3>
+          <h3 className="text-base font-bold text-[#4A4A4A]">Render Backend & GitHub Pages Linkage</h3>
         </div>
 
         <div className="space-y-4 text-xs">
           <p className="text-gray-600">
-            Configure your production FastAPI backend URL hosted on Render. When deployed, your Vercel frontend connects automatically through environment variables.
+            Configure your production FastAPI backend URL hosted on Render. When deployed on GitHub Pages, your frontend connects directly to Render endpoints.
           </p>
 
           <div className="space-y-2">
@@ -87,7 +87,7 @@ export const Settings = () => {
           <div className="flex items-center justify-between pt-2">
             <div className="flex items-center gap-2 text-xs">
               <span className="w-2.5 h-2.5 rounded-full bg-green-500"></span>
-              <span className="font-semibold text-gray-700">Vercel SPA Config: Active (vercel.json)</span>
+              <span className="font-semibold text-gray-700">GitHub Actions Workflow: Active (.github/workflows/deploy.yml)</span>
             </div>
 
             <Button

@@ -79,7 +79,7 @@ export const LandingPage = () => {
                 <Sparkles className="w-4 h-4 text-gold-500 animate-spin-ultra-slow" />
                 <span>Next-Gen Smart Hostel Administration</span>
                 <span className="w-1.5 h-1.5 rounded-full bg-gold-500"></span>
-                <span className="text-gray-500 font-medium">Vercel & Render Ready</span>
+                <span className="text-gray-500 font-medium">GitHub Pages & Render Ready</span>
               </div>
 
               {/* Main Heading */}
@@ -440,10 +440,10 @@ export const LandingPage = () => {
           <div className="flex flex-col lg:flex-row items-center justify-between gap-8 text-center lg:text-left">
             <div className="space-y-2">
               <h3 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
-                Ready for Instant Vercel & Render Deployment
+                Ready for GitHub Pages & Render Deployment
               </h3>
               <p className="text-amber-100 text-sm max-w-2xl">
-                Pre-configured SPA rewrites for Vercel, unified Render backend API connectors, and automated PostgreSQL Supabase schema.
+                Automated GitHub Actions workflow for Pages, unified Render backend API connectors, and automated PostgreSQL Supabase schema.
               </p>
             </div>
             <Link to="/login">

@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter } from 'react-router-dom';
+import { HashRouter } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { StudentProvider } from './context/StudentContext';
 import { NotificationProvider } from './context/NotificationContext';
@@ -8,7 +8,7 @@ import { Toast } from './components/ui/Toast';
 
 export function App() {
   return (
-    <BrowserRouter>
+    <HashRouter>
       <AuthProvider>
         <StudentProvider>
           <NotificationProvider>
@@ -17,7 +17,7 @@ export function App() {
           </NotificationProvider>
         </StudentProvider>
       </AuthProvider>
-    </BrowserRouter>
+    </HashRouter>
   );
 }
 

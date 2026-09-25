@@ -6,11 +6,12 @@ A modern, high-performance web platform built for **Hari-Saurabh Hostel** admini
 
 ## 🚀 Technology Stack
 
-### Frontend (Vercel Ready)
+### Frontend (GitHub Pages Ready)
 - **Framework**: React 18 + Vite
-- **Styling**: Tailwind CSS + Custom Design System
+- **Styling**: Tailwind CSS + Custom Luxury Light Theme Design System
 - **Animations**: Framer Motion
 - **Icons**: Lucide React
+- **Router**: HashRouter (Zero 404s on GitHub Pages direct refreshes)
 - **State & Context**: React Context API (`AuthContext`, `StudentContext`, `NotificationContext`)
 - **API Client**: Universal Fetch Client with Render backend configuration & mock fallback
 
@@ -24,9 +25,9 @@ A modern, high-performance web platform built for **Hari-Saurabh Hostel** admini
 
 ## 🎨 Branding & Color Palette
 
-- **Primary Gold**: `#E6A23C` (Buttons, highlights, active states)
+- **Primary Gold**: `#E6A23C` (Buttons, key actions, active states)
 - **Secondary Gold**: `#F2C46D` (Accents, cards, borders)
-- **Dark Gray**: `#4A4A4A` (Typography, icons)
+- **Dark Gray**: `#4A4A4A` (Typography, navigation)
 - **Background**: `#F7F8FA` (Clean light-theme canvas)
 - **Card Radius**: `24px` / `28px`
 
@@ -36,6 +37,9 @@ A modern, high-performance web platform built for **Hari-Saurabh Hostel** admini
 
 ```bash
 hostel/
+├── .github/
+│   └── workflows/
+│       └── deploy.yml             # Automated GitHub Actions deployment to Pages
 ├── frontend/
 │   ├── public/
 │   │   ├── logo.png               # Hari-Saurabh Hostel brand logo
@@ -60,27 +64,27 @@ hostel/
 │   │   ├── styles/                # globals.css, animations.css
 │   │   ├── App.jsx
 │   │   └── main.jsx
-│   ├── vercel.json                # Vercel SPA routing configuration
-│   ├── vite.config.js
+│   ├── vite.config.js             # Base relative path for GitHub Pages
 │   ├── tailwind.config.js
 │   └── .env.example
-├── vercel.json                    # Root build configuration
+├── package.json
 └── README.md
 ```
 
 ---
 
-## 🌐 Deploying Frontend on Vercel
+## 🌐 How to Enable GitHub Pages in Repository Settings
 
-1. Push your repository to GitHub or GitLab.
-2. In the [Vercel Dashboard](https://vercel.com):
-   - Click **Add New Project** and select your repository.
-   - Set **Root Directory** to `frontend` (or keep root with included root `vercel.json`).
-   - Build Command: `npm run build`
-   - Output Directory: `dist`
-3. Add Environment Variable:
-   - `VITE_API_BASE_URL`: `https://your-backend-name.onrender.com/api`
-4. Click **Deploy**.
+The automated deployment workflow is already committed at [`.github/workflows/deploy.yml`](file:///.github/workflows/deploy.yml).
+
+To activate it:
+1. Go to your repository on GitHub: **[https://github.com/shrey-1802/hari-shaurab-hostel](https://github.com/shrey-1802/hari-shaurab-hostel)**
+2. Click on **Settings** (top right tab).
+3. In the left sidebar, click on **Pages**.
+4. Under **Build and deployment** ➔ **Source**:
+   - Select **GitHub Actions** (instead of Deploy from a branch).
+5. That's it! GitHub Actions will automatically build the `frontend` and publish your live website to:
+   👉 **`https://shrey-1802.github.io/hari-shaurab-hostel/`**
 
 ---
 
@@ -88,5 +92,5 @@ hostel/
 
 1. Deploy your FastAPI backend to [Render.com](https://render.com).
 2. Copy your Render web service URL (e.g., `https://hari-saurabh-backend.onrender.com/api`).
-3. Set `VITE_API_BASE_URL` in `frontend/.env` (or Vercel environment variables).
+3. Set `VITE_API_BASE_URL` in `frontend/.env`.
 4. The frontend API client automatically passes JWT Bearer tokens and connects directly to your live endpoints!
