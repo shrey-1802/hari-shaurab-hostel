@@ -10,7 +10,7 @@ export const ROLE_LABELS = {
   [ROLES.WING_LEADER]: 'Wing Leader (Floor Specific)',
 };
 
-export const FLOORS = [1, 2, 3, 4, 5];
+export const FLOORS = [4, 6];
 
 export const DEPARTMENTS = [
   'Computer Science & Engineering',
@@ -26,11 +26,7 @@ export const DEPARTMENTS = [
 ];
 
 export const COLLEGES = [
-  'National Institute of Technology',
-  'Government Engineering College',
-  'University Institute of Technology',
-  'Apex Institute of Engineering',
-  'City College of Science & Tech'
+  'Hari-Saurabh Institute of Technology'
 ];
 
 export const NOTIFICATION_TYPES = {
