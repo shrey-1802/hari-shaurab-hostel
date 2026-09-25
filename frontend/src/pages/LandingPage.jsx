@@ -76,18 +76,9 @@ export const LandingPage = () => {
           initial={{ opacity: 0, scale: 0.9, y: 15 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           transition={{ duration: 0.8 }}
-          className="mb-6 flex flex-col items-center text-center"
+          className="mb-8 flex flex-col items-center text-center"
         >
-          <AnimatedLogo size="large" showText={false} animated={true} />
-
-          <div className="mt-4 space-y-1">
-            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-[#4A4A4A]">
-              HARI-SAURABH <span className="gold-gradient-text font-black">HOSTEL</span>
-            </h1>
-            <p className="text-xs font-semibold uppercase tracking-widest text-gray-400">
-              Smart Administration Portal
-            </p>
-          </div>
+          <AnimatedLogo size="hero" showText={false} animated={true} />
         </motion.div>
 
         {/* 420px Executive Glassmorphism Login Card */}
