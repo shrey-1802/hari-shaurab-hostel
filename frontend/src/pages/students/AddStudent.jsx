@@ -39,7 +39,7 @@ export const AddStudent = () => {
     hobby: '',
     hostel_friends: '',
     non_hostel_friends: '',
-    floor_number: isMainLeader ? 2 : user?.assigned_floor || 2,
+    floor_number: isMainLeader ? 4 : user?.assigned_floor || 4,
     room_number: '',
     whatsapp_number: '',
     profile_image_url: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=300&auto=format&fit=crop&q=80',
@@ -116,7 +116,7 @@ export const AddStudent = () => {
             <div className="space-y-2">
               <h4 className="text-sm font-bold text-[#4A4A4A]">Student Profile Photo</h4>
               <p className="text-xs text-gray-500">Supports JPG, PNG with automatic circle thumbnail formatting</p>
-              <label className="inline-flex items-center gap-2 text-xs font-bold bg-white text-gold-700 px-4 py-2 rounded-xl border border-gold-300 hover:bg-gold-50 cursor-pointer shadow-soft-sm transition-all">
+              <label className="inline-flex items-center gap-2 text-xs font-bold bg-white text-gold-700 px-4 py-2 rounded-xl border border-gold-300 hover:bg-gold-50 cursor-pointer shadow-soft-sm">
                 <Upload className="w-3.5 h-3.5" />
                 <span>Upload New Photo</span>
                 <input type="file" accept="image/*" onChange={handleImageChange} className="hidden" />
@@ -179,7 +179,7 @@ export const AddStudent = () => {
                   value={formData.floor_number}
                   onChange={handleChange}
                   disabled={!isMainLeader}
-                  className="w-full h-[52px] px-4 bg-white border border-[#DADADA] rounded-[14px] text-sm text-[#4A4A4A] focus:outline-none focus:border-gold-500 focus:ring-4 focus:ring-gold-100 font-semibold disabled:bg-gray-100"
+                  className="w-full h-[52px] px-4 bg-white border border-[#DADADA] rounded-[14px] text-sm text-[#4A4A4A] focus:outline-none focus:border-gold-500 focus:ring-4 focus:ring-gold-100 font-medium disabled:bg-gray-50 disabled:cursor-not-allowed"
                 >
                   {FLOORS.map((f) => (
                     <option key={f} value={f}>
@@ -206,22 +206,17 @@ export const AddStudent = () => {
               <GraduationCap className="w-4 h-4" /> 3. Academic Details
             </h4>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {/* College - Read-only Text Input */}
               <div>
                 <label className="block text-xs font-semibold text-[#4A4A4A] uppercase tracking-wider mb-2">
                   College / University
                 </label>
-                <select
-                  name="college_name"
+                <input
+                  type="text"
                   value={formData.college_name}
-                  onChange={handleChange}
-                  className="w-full h-[52px] px-4 bg-white border border-[#DADADA] rounded-[14px] text-sm text-[#4A4A4A] focus:outline-none focus:border-gold-500 font-medium truncate"
-                >
-                  {COLLEGES.map((c) => (
-                    <option key={c} value={c}>
-                      {c}
-                    </option>
-                  ))}
-                </select>
+                  disabled
+                  className="w-full h-[52px] px-4 bg-gray-50 border border-[#DADADA] rounded-[14px] text-sm text-[#4A4A4A] font-medium cursor-not-allowed"
+                />
               </div>
 
               <div>
