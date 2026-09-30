@@ -6,7 +6,7 @@ import { useNotifications } from '../../context/NotificationContext';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
-import { FLOORS, DEPARTMENTS, COLLEGES } from '../../utils/constants';
+import { FLOORS, DEPARTMENTS } from '../../utils/constants';
 import {
   ArrowLeft,
   UserPlus,
@@ -32,7 +32,7 @@ export const AddStudent = () => {
     student_mobile: '',
     parent_name: '',
     parent_mobile: '',
-    college_name: COLLEGES[0],
+    college_name: '',
     department: DEPARTMENTS[0],
     semester_result: '',
     hobby: '',
@@ -199,17 +199,14 @@ export const AddStudent = () => {
               <GraduationCap className="w-4 h-4" /> 3. Academic Details
             </h4>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs font-semibold text-[#4A4A4A] uppercase tracking-wider mb-2">
-                  College / University
-                </label>
-                <input
-                  type="text"
-                  value={formData.college_name}
-                  disabled
-                  className="w-full h-[52px] px-4 bg-gray-50 border border-[#DADADA] rounded-[14px] text-sm text-[#4A4A4A] font-medium cursor-not-allowed"
-                />
-              </div>
+              <Input
+                label="College / University *"
+                name="college_name"
+                value={formData.college_name}
+                onChange={handleChange}
+                placeholder="e.g. Hari-Saurabh Institute of Technology"
+                required
+              />
 
               <div>
                 <label className="block text-xs font-semibold text-[#4A4A4A] uppercase tracking-wider mb-2">
