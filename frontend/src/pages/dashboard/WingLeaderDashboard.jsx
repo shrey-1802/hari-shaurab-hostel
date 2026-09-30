@@ -21,7 +21,7 @@ import { formatDate, isBirthdayToday, isBirthdayTomorrow } from '../../utils/hel
 export const WingLeaderDashboard = () => {
   const { user } = useAuth();
   const { visibleStudents, stats } = useStudents();
-  const assignedFloor = user?.assigned_floor || 2;
+  const assignedFloor = user?.assigned_floor || 4;
 
   const floorStudents = visibleStudents;
   const floorApproachingBirthdays = floorStudents.filter(s => isBirthdayToday(s.dob) || isBirthdayTomorrow(s.dob));

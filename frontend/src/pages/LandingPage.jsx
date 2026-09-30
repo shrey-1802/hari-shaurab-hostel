@@ -27,7 +27,7 @@ export const LandingPage = () => {
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
   const [role, setRole] = useState('MAIN_LEADER');
-  const [assignedFloor, setAssignedFloor] = useState(2);
+  const [assignedFloor, setAssignedFloor] = useState(4);
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -214,7 +214,7 @@ export const LandingPage = () => {
                         onChange={(e) => setAssignedFloor(e.target.value)}
                         className="w-full h-[50px] px-3 bg-white border border-[#DADADA] focus:border-gold-500 rounded-[14px] text-xs font-bold text-[#4A4A4A] focus:outline-none shadow-sm"
                       >
-                        {[1, 2, 3, 4, 5].map((f) => (
+                        {[4, 6].map((f) => (
                           <option key={f} value={f}>
                             Floor {f}
                           </option>

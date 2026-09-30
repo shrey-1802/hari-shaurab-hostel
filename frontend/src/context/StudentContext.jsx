@@ -86,7 +86,7 @@ export const StudentProvider = ({ children }) => {
   const stats = useMemo(() => {
     const todayBirthdays = students.filter(s => isBirthdayToday(s.dob));
     const weekBirthdays = students.filter(s => isBirthdayThisWeek(s.dob));
-    const floorCounts = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+    const floorCounts = { 4: 0, 6: 0 };
     students.forEach(s => {
       if (floorCounts[s.floor_number] !== undefined) {
         floorCounts[s.floor_number]++;

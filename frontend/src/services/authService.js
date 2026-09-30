@@ -8,22 +8,47 @@ const getDefaultUsers = () => {
       id: 'usr-admin-01',
       email: 'admin@harisaurabh.com',
       password: 'admin123',
-      full_name: 'Main Leader (Admin)',
+      full_name: 'Floor 6 Group Leader A (Admin)',
       role: 'MAIN_LEADER',
-      assigned_floor: null,
+      assigned_floor: 6,
+    },
+    {
+      id: 'usr-leader-02',
+      email: 'leader.floor6@harisaurabh.com',
+      password: 'admin123',
+      full_name: 'Floor 6 Group Leader B',
+      role: 'MAIN_LEADER',
+      assigned_floor: 6,
+    },
+    {
+      id: 'usr-wing-01',
+      email: 'leader.floor4@harisaurabh.com',
+      password: 'leader123',
+      full_name: 'Floor 4 Wing Leader A',
+      role: 'WING_LEADER',
+      assigned_floor: 4,
     },
     {
       id: 'usr-wing-02',
-      email: 'leader.floor2@harisaurabh.com',
+      email: 'leader.floor4b@harisaurabh.com',
       password: 'leader123',
-      full_name: 'Floor 2 Wing Leader',
+      full_name: 'Floor 4 Wing Leader B',
       role: 'WING_LEADER',
-      assigned_floor: 2,
+      assigned_floor: 4,
     },
   ];
 };
 
+const USERS_STORAGE_VERSION = 'hs_users_v2';
+
 const getStoredUsers = () => {
+  // Purge stale legacy user accounts once on first load
+  if (!localStorage.getItem(USERS_STORAGE_VERSION)) {
+    const fresh = getDefaultUsers();
+    localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(fresh));
+    localStorage.setItem(USERS_STORAGE_VERSION, 'true');
+    return fresh;
+  }
   const data = localStorage.getItem(USERS_STORAGE_KEY);
   if (!data) {
     const initial = getDefaultUsers();
@@ -67,7 +92,7 @@ export const authService = {
         password: password,
         full_name: email.split('@')[0].replace('.', ' ').toUpperCase(),
         role,
-        assigned_floor: role === 'WING_LEADER' ? 2 : null,
+        assigned_floor: role === 'WING_LEADER' ? 4 : 6,
       };
 
       users.push(newUser);

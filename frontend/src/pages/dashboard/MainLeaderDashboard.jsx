@@ -17,6 +17,7 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { isBirthdayToday, isBirthdayTomorrow } from '../../utils/helpers';
+import { FLOORS } from '../../utils/constants';
 
 export const MainLeaderDashboard = () => {
   const { students, stats } = useStudents();
@@ -38,7 +39,7 @@ export const MainLeaderDashboard = () => {
             Hari-Saurabh Command Center
           </h2>
           <p className="text-amber-100 text-xs sm:text-sm">
-            All 5 residential floors active • Real-time student roster & manual WhatsApp birthday wish engine
+            2 residential floors active (Floor 4 & Floor 6) • Real-time student roster & manual WhatsApp birthday wish engine
           </p>
         </div>
 
@@ -85,9 +86,9 @@ export const MainLeaderDashboard = () => {
               <Building2 className="w-5 h-5" />
             </div>
           </div>
-          <div className="text-3xl font-black text-[#4A4A4A]">5 Wings</div>
+          <div className="text-3xl font-black text-[#4A4A4A]">2 Floors</div>
           <div className="flex items-center justify-between mt-3 text-xs text-gray-500">
-            <span>Fl. 1-5 Operational</span>
+            <span>Fl. 4 & 6 Operational</span>
             <span className="font-semibold text-blue-600">Full Coverage</span>
           </div>
         </Card>
@@ -144,11 +145,11 @@ export const MainLeaderDashboard = () => {
                 <h3 className="text-lg font-bold text-[#4A4A4A]">Floor-wise Student Distribution</h3>
                 <p className="text-xs text-gray-500">Real-time student density across residential wings</p>
               </div>
-              <Badge variant="gold" size="sm">5 Floors Active</Badge>
+              <Badge variant="gold" size="sm">2 Floors Active</Badge>
             </div>
 
             <div className="space-y-4">
-              {[1, 2, 3, 4, 5].map((floor) => {
+              {FLOORS.map((floor) => {
                 const count = stats.floorCounts[floor] || 0;
                 const percentage = stats.totalStudents > 0 ? Math.round((count / stats.totalStudents) * 100) : 0;
                 return (

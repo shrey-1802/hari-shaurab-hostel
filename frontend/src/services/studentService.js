@@ -2,14 +2,26 @@ import { apiClient } from './api';
 import { INITIAL_STUDENTS } from '../utils/constants';
 
 const LOCAL_STORAGE_KEY = 'hs_students_data';
+const CLEAN_STORAGE_VERSION = 'hs_cleaned_v2';
 
 const getLocalStudents = () => {
+  // Purge any stale legacy demo data once
+  if (!localStorage.getItem(CLEAN_STORAGE_VERSION)) {
+    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify([]));
+    localStorage.setItem(CLEAN_STORAGE_VERSION, 'true');
+    return [];
+  }
+
   const data = localStorage.getItem(LOCAL_STORAGE_KEY);
   if (!data) {
-    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(INITIAL_STUDENTS));
-    return INITIAL_STUDENTS;
+    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify([]));
+    return [];
   }
-  return JSON.parse(data);
+  try {
+    return JSON.parse(data);
+  } catch {
+    return [];
+  }
 };
 
 const saveLocalStudents = (students) => {
