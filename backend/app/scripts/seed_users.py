@@ -1,12 +1,12 @@
 """
-Seed script to create initial admin and 4 wing leader users.
+Seed script to create initial admin and 4 wing leader users with real emails and names.
 Allocations:
 - Floor 4:
-    - Wing Leader 1: Floor 4, Rooms 401–409
-    - Wing Leader 2: Floor 4, Rooms 410–418
+    - AryanBhai: Floor 4, Rooms 401–409 (aryansinhc673@gmail.com)
+    - ShreemadBhai: Floor 4, Rooms 410–418 (shreemadgandhi369@gmail.com)
 - Floor 6:
-    - Wing Leader 3: Floor 6, Rooms 601–609
-    - Wing Leader 4: Floor 6, Rooms 610–618
+    - JeetBhai: Floor 6, Rooms 601–609 (jeetsinhsolanki749@gmail.com)
+    - Param: Floor 6, Rooms 610–618 (patelparam2111@gmail.com)
 
 Usage:
     python -m app.scripts.seed_users
@@ -41,8 +41,8 @@ async def seed():
             ),
             # Floor 4 Leaders
             User(
-                full_name="Wing Leader (Floor 4: 401-409)",
-                email="wingleader4a@hostel.com",
+                full_name="AryanBhai (Floor 4: 401-409)",
+                email="aryansinhc673@gmail.com",
                 hashed_password=hash_password("Wing@1234"),
                 role=UserRole.WING_LEADER,
                 floor_number=4,
@@ -50,8 +50,8 @@ async def seed():
                 room_end="409",
             ),
             User(
-                full_name="Wing Leader (Floor 4: 410-418)",
-                email="wingleader4b@hostel.com",
+                full_name="ShreemadBhai (Floor 4: 410-418)",
+                email="shreemadgandhi369@gmail.com",
                 hashed_password=hash_password("Wing@1234"),
                 role=UserRole.WING_LEADER,
                 floor_number=4,
@@ -60,8 +60,8 @@ async def seed():
             ),
             # Floor 6 Leaders
             User(
-                full_name="Wing Leader (Floor 6: 601-609)",
-                email="wingleader6a@hostel.com",
+                full_name="JeetBhai (Floor 6: 601-609)",
+                email="jeetsinhsolanki749@gmail.com",
                 hashed_password=hash_password("Wing@1234"),
                 role=UserRole.WING_LEADER,
                 floor_number=6,
@@ -69,8 +69,8 @@ async def seed():
                 room_end="609",
             ),
             User(
-                full_name="Wing Leader (Floor 6: 610-618)",
-                email="wingleader6b@hostel.com",
+                full_name="Param (Floor 6: 610-618)",
+                email="patelparam2111@gmail.com",
                 hashed_password=hash_password("Wing@1234"),
                 role=UserRole.WING_LEADER,
                 floor_number=6,

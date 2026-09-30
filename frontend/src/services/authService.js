@@ -16,9 +16,9 @@ export const LEADER_ACCOUNTS = [
   },
   {
     id: 'usr-wing-4a',
-    email: 'wingleader4a@hostel.com',
-    password: 'Wing@1234',
-    full_name: 'Wing Leader (Floor 4: 401-409)',
+    email: 'Jeetsinhsolanki749@gmail.com',
+    password: 'Jeet@0369',
+    full_name: 'JeetBhai (Floor 4: 401-409)',
     role: 'WING_LEADER',
     assigned_floor: 4,
     room_start: '401',
