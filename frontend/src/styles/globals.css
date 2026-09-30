@@ -14,13 +14,24 @@
 @layer base {
   * {
     border-color: #DADADA;
+    box-sizing: border-box;
   }
   
-  body {
+  html, body {
+    width: 100%;
+    max-width: 100vw;
+    overflow-x: hidden;
+    position: relative;
     background-color: #F7F8FA;
     color: #4A4A4A;
     font-family: 'Poppins', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  }
+
+  #root {
+    width: 100%;
+    max-width: 100vw;
     overflow-x: hidden;
+    min-height: 100vh;
   }
 
   h1, h2, h3, h4, h5, h6 {

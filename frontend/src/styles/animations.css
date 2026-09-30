@@ -36,18 +36,29 @@
   }
 }
 
-.animate-float-slow {
-  animation: float 7s ease-in-out infinite;
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
-.animate-gold-pulse {
-  animation: pulseGoldGlow 3s ease-in-out infinite;
+@keyframes slideRight {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(0);
+  }
 }
 
-.animate-badge-float {
-  animation: badgeFloat 4s ease-in-out infinite;
+.animate-fade-in {
+  animation: fadeIn 0.25s ease-out forwards;
 }
 
-.animate-spin-ultra-slow {
-  animation: logoSunburst 25s linear infinite;
+.animate-slide-right {
+  animation: slideRight 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
+

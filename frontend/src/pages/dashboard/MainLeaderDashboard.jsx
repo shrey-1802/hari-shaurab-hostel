@@ -43,14 +43,14 @@ export const MainLeaderDashboard = () => {
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
           <Link to="/add-student">
-            <Button size="md" className="bg-white text-gold-700 hover:bg-gold-50 font-bold shadow-soft-sm" icon={UserPlus}>
+            <Button size="sm" smSize="md" className="bg-white text-gold-700 hover:bg-gold-50 font-bold shadow-soft-sm text-xs sm:text-sm" icon={UserPlus}>
               Register New Student
             </Button>
           </Link>
           <Link to="/birthdays">
-            <Button size="md" variant="outline" className="text-white border-white/60 hover:bg-white/10" icon={Cake}>
+            <Button size="sm" smSize="md" variant="outline" className="text-white border-white/60 hover:bg-white/10 text-xs sm:text-sm" icon={Cake}>
               Birthdays ({stats.todayBirthdaysCount})
             </Button>
           </Link>

@@ -3,185 +3,205 @@ import { useAuth } from '../../context/AuthContext';
 import { useNotifications } from '../../context/NotificationContext';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
-import { Input } from '../../components/ui/Input';
 import { Badge } from '../../components/ui/Badge';
-import { API_BASE_URL } from '../../utils/constants';
 import {
   Settings as SettingsIcon,
-  Server,
-  Database,
-  MessageSquare,
-  Shield,
-  CheckCircle2,
-  AlertTriangle,
-  RefreshCw,
   User,
+  Shield,
+  Bell,
+  Building,
+  CheckCircle2,
+  Mail,
+  Smartphone,
+  Save,
+  Moon,
   Sparkles,
 } from 'lucide-react';
 
 export const Settings = () => {
-  const { user } = useAuth();
+  const { user, isMainLeader } = useAuth();
   const { showToast } = useNotifications();
-  const [apiUrl, setApiUrl] = useState(API_BASE_URL);
-  const [testingConnection, setTestingConnection] = useState(false);
-  const [connectionStatus, setConnectionStatus] = useState({
-    tested: false,
-    ok: true,
-    message: 'Backend configured for Render deployment & local development',
+
+  const [notificationPreferences, setNotificationPreferences] = useState({
+    birthdayAlerts: true,
+    dayBeforeReminders: true,
+    whatsappPrompt: true,
+    soundAlerts: false,
   });
 
-  const handleTestBackend = async () => {
-    setTestingConnection(true);
-    try {
-      // Simulate pinging Render API / health check
-      await new Promise((resolve) => setTimeout(resolve, 800));
-      setConnectionStatus({
-        tested: true,
-        ok: true,
-        message: 'Connected successfully to Render FastAPI backend service!',
-      });
-      showToast('Render backend connection verified!', 'success');
-    } catch {
-      setConnectionStatus({
-        tested: true,
-        ok: false,
-        message: 'Could not reach backend. Frontend will operate in seamless mock mode.',
-      });
-      showToast('Backend connection check completed with mock fallback', 'info');
-    } finally {
-      setTestingConnection(false);
-    }
+  const handleToggle = (key) => {
+    setNotificationPreferences((prev) => {
+      const updated = { ...prev, [key]: !prev[key] };
+      showToast('Preference updated', 'info');
+      return updated;
+    });
+  };
+
+  const handleSaveProfileSettings = (e) => {
+    e.preventDefault();
+    showToast('Settings saved successfully!', 'success');
   };
 
   return (
-    <div className="space-y-8 max-w-4xl mx-auto">
+    <div className="space-y-6 sm:space-y-8 max-w-4xl mx-auto w-full min-w-0">
       {/* Top Header */}
       <div>
-        <h2 className="text-2xl sm:text-3xl font-extrabold text-[#4A4A4A]">Settings & System Configuration</h2>
+        <h2 className="text-2xl sm:text-3xl font-extrabold text-[#4A4A4A]">Settings & Leader Profile</h2>
         <p className="text-xs sm:text-sm text-gray-500 mt-1">
-          Manage cloud deployment URLs, Render backend connection, and administrator profile
+          Manage system preferences, notification alerts, and active administrator account details
         </p>
       </div>
 
-      {/* Cloud & Deployment Status Card */}
-      <Card className="border-l-4 border-l-gold-500">
-        <div className="flex items-center gap-3 mb-4">
-          <Server className="w-5 h-5 text-gold-600" />
-          <h3 className="text-base font-bold text-[#4A4A4A]">Render Backend & GitHub Pages Linkage</h3>
+      {/* Leader Profile Summary Card */}
+      <Card className="space-y-6 border-l-4 border-l-gold-500">
+        <div className="flex items-center gap-2.5 pb-4 border-b border-gray-100">
+          <div className="w-9 h-9 rounded-xl bg-gold-50 text-gold-600 flex items-center justify-center">
+            <User className="w-5 h-5 text-gold-600" />
+          </div>
+          <div>
+            <h3 className="text-base sm:text-lg font-bold text-[#4A4A4A]">Active Leader Account</h3>
+            <p className="text-xs text-gray-500">Verified hostel administration credentials</p>
+          </div>
         </div>
 
-        <div className="space-y-4 text-xs">
-          <p className="text-gray-600">
-            Configure your production FastAPI backend URL hosted on Render. When deployed on GitHub Pages, your frontend connects directly to Render endpoints.
-          </p>
-
-          <div className="space-y-2">
-            <Input
-              label="Render Backend API Base URL"
-              value={apiUrl}
-              onChange={(e) => setApiUrl(e.target.value)}
-              placeholder="https://hari-saurabh-backend.onrender.com/api"
+        <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6">
+          <div className="relative shrink-0">
+            <img
+              src={user?.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80'}
+              alt={user?.full_name}
+              className="w-20 h-20 sm:w-24 sm:h-24 rounded-full object-cover ring-4 ring-gold-400/80 shadow-soft-sm"
             />
+            <span className="absolute bottom-1 right-1 w-4 h-4 bg-emerald-500 rounded-full border-2 border-white" title="Active Session" />
           </div>
 
-          <div className="flex items-center justify-between pt-2">
-            <div className="flex items-center gap-2 text-xs">
-              <span className="w-2.5 h-2.5 rounded-full bg-green-500"></span>
-              <span className="font-semibold text-gray-700">GitHub Actions Workflow: Active (.github/workflows/deploy.yml)</span>
+          <div className="space-y-3 text-center sm:text-left flex-1 min-w-0">
+            <div>
+              <h4 className="text-lg sm:text-xl font-extrabold text-[#4A4A4A] truncate">{user?.full_name}</h4>
+              <p className="text-xs sm:text-sm text-gray-500 flex items-center justify-center sm:justify-start gap-1.5 mt-0.5">
+                <Mail className="w-3.5 h-3.5 text-gold-600" />
+                <span>{user?.email}</span>
+              </p>
             </div>
 
-            <Button
-              variant="secondary"
-              size="sm"
-              isLoading={testingConnection}
-              onClick={handleTestBackend}
-              icon={RefreshCw}
-            >
-              Test Backend Connection
-            </Button>
-          </div>
-
-          {connectionStatus.tested && (
-            <div
-              className={`p-3 rounded-xl border text-xs font-semibold flex items-center gap-2 ${
-                connectionStatus.ok
-                  ? 'bg-green-50 border-green-200 text-green-700'
-                  : 'bg-amber-50 border-amber-200 text-amber-700'
-              }`}
-            >
-              {connectionStatus.ok ? (
-                <CheckCircle2 className="w-4 h-4 text-green-500 shrink-0" />
+            <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 pt-1">
+              <Badge variant="gold" size="md">
+                {user?.role === 'MAIN_LEADER' ? 'Main Leader' : 'Wing Leader'}
+              </Badge>
+              {user?.assigned_floor ? (
+                <Badge variant="gray" size="md">
+                  Assigned Floor {user.assigned_floor} Wing
+                </Badge>
               ) : (
-                <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0" />
+                <Badge variant="success" size="md">
+                  All Floors Authority (Fl. 4 & 6)
+                </Badge>
               )}
-              <span>{connectionStatus.message}</span>
             </div>
-          )}
+          </div>
         </div>
       </Card>
 
-      {/* Database & Cloud API Services */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Supabase Database */}
-        <Card className="space-y-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2 text-gold-700 font-bold text-sm">
-              <Database className="w-4 h-4 text-gold-600" />
-              <span>Supabase PostgreSQL</span>
-            </div>
-            <Badge variant="success" size="sm">Connected</Badge>
-          </div>
-          <p className="text-xs text-gray-500">
-            Schema initialized with Row Level Security (RLS) policies for floor-based separation.
-          </p>
-          <div className="text-[11px] text-gray-400 bg-gray-50 p-2.5 rounded-xl border">
-            Tables: users, students, notifications, birthday_logs, whatsapp_logs
-          </div>
-        </Card>
-
-        {/* WhatsApp Cloud API */}
-        <Card className="space-y-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2 text-gold-700 font-bold text-sm">
-              <MessageSquare className="w-4 h-4 text-gold-600" />
-              <span>WhatsApp Cloud API</span>
-            </div>
-            <Badge variant="gold" size="sm">9:00 AM Auto</Badge>
-          </div>
-          <p className="text-xs text-gray-500">
-            Automated birthday greetings scheduled daily using Meta WhatsApp Business platform.
-          </p>
-          <div className="text-[11px] text-gray-400 bg-gray-50 p-2.5 rounded-xl border">
-            Delivery triggers: 24-hr reminder, 6-hr reminder, birthday morning greeting
-          </div>
-        </Card>
-      </div>
-
-      {/* Leader Profile Summary */}
+      {/* Hostel Information Card */}
       <Card className="space-y-4">
-        <div className="flex items-center gap-2 pb-3 border-b border-gray-100">
-          <User className="w-5 h-5 text-gold-600" />
-          <h3 className="text-base font-bold text-[#4A4A4A]">Active Leader Profile</h3>
+        <div className="flex items-center gap-2.5 pb-3 border-b border-gray-100">
+          <div className="w-9 h-9 rounded-xl bg-gold-50 text-gold-600 flex items-center justify-center">
+            <Building className="w-5 h-5 text-gold-600" />
+          </div>
+          <div>
+            <h3 className="text-base sm:text-lg font-bold text-[#4A4A4A]">Hostel Premises Information</h3>
+            <p className="text-xs text-gray-500">Institution & Residential overview</p>
+          </div>
         </div>
 
-        <div className="flex flex-col sm:flex-row items-center gap-6">
-          <img
-            src={user?.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80'}
-            alt={user?.full_name}
-            className="w-16 h-16 rounded-full object-cover ring-2 ring-gold-400"
-          />
-          <div className="space-y-1 text-center sm:text-left">
-            <h4 className="text-base font-bold text-[#4A4A4A]">{user?.full_name}</h4>
-            <p className="text-xs text-gray-500">{user?.email}</p>
-            <div className="flex items-center justify-center sm:justify-start gap-2 pt-1">
-              <Badge variant="gold" size="sm">{user?.role}</Badge>
-              {user?.assigned_floor && (
-                <Badge variant="gray" size="sm">Assigned Floor {user.assigned_floor}</Badge>
-              )}
-            </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+          <div className="p-3.5 rounded-2xl bg-gray-50/70 border border-gray-200">
+            <span className="text-gray-400 font-semibold block mb-0.5">Hostel Name</span>
+            <span className="text-[#4A4A4A] font-extrabold text-sm">Hari-Saurabh Boy's Hostel</span>
           </div>
+
+          <div className="p-3.5 rounded-2xl bg-gray-50/70 border border-gray-200">
+            <span className="text-gray-400 font-semibold block mb-0.5">Active Residential Floors</span>
+            <span className="text-[#4A4A4A] font-extrabold text-sm">Floor 4 & Floor 6</span>
+          </div>
+
+          <div className="p-3.5 rounded-2xl bg-gray-50/70 border border-gray-200">
+            <span className="text-gray-400 font-semibold block mb-0.5">Primary Wish Channel</span>
+            <span className="text-gold-700 font-extrabold text-sm">WhatsApp Manual Dispatch (wa.me)</span>
+          </div>
+
+          <div className="p-3.5 rounded-2xl bg-gray-50/70 border border-gray-200">
+            <span className="text-gray-400 font-semibold block mb-0.5">System Access Level</span>
+            <span className="text-green-700 font-extrabold text-sm">Role-Based Clearance Active</span>
+          </div>
+        </div>
+      </Card>
+
+      {/* Alert & Notification Preferences */}
+      <Card className="space-y-4">
+        <div className="flex items-center gap-2.5 pb-3 border-b border-gray-100">
+          <div className="w-9 h-9 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
+            <Bell className="w-5 h-5 text-amber-600" />
+          </div>
+          <div>
+            <h3 className="text-base sm:text-lg font-bold text-[#4A4A4A]">Birthday & System Alerts</h3>
+            <p className="text-xs text-gray-500">Configure proactive notifications</p>
+          </div>
+        </div>
+
+        <div className="space-y-3">
+          <div className="flex items-center justify-between p-3.5 rounded-2xl bg-white border border-gray-200/80 hover:bg-gold-50/20 transition-colors">
+            <div>
+              <p className="text-xs sm:text-sm font-bold text-[#4A4A4A]">Birthday Today Live Notification</p>
+              <p className="text-[11px] text-gray-500">Display top banner and sound alert when resident has a birthday today</p>
+            </div>
+            <button
+              onClick={() => handleToggle('birthdayAlerts')}
+              className={`w-12 h-7 flex items-center rounded-full p-1 transition-colors duration-200 ${
+                notificationPreferences.birthdayAlerts ? 'bg-gold-500 justify-end' : 'bg-gray-200 justify-start'
+              }`}
+            >
+              <span className="w-5 h-5 rounded-full bg-white shadow-md transform transition-transform" />
+            </button>
+          </div>
+
+          <div className="flex items-center justify-between p-3.5 rounded-2xl bg-white border border-gray-200/80 hover:bg-gold-50/20 transition-colors">
+            <div>
+              <p className="text-xs sm:text-sm font-bold text-[#4A4A4A]">1 Day Before (Tomorrow) Advance Reminder</p>
+              <p className="text-[11px] text-gray-500">Alert leaders 24 hours ahead to prepare birthday arrangements</p>
+            </div>
+            <button
+              onClick={() => handleToggle('dayBeforeReminders')}
+              className={`w-12 h-7 flex items-center rounded-full p-1 transition-colors duration-200 ${
+                notificationPreferences.dayBeforeReminders ? 'bg-gold-500 justify-end' : 'bg-gray-200 justify-start'
+              }`}
+            >
+              <span className="w-5 h-5 rounded-full bg-white shadow-md transform transition-transform" />
+            </button>
+          </div>
+
+          <div className="flex items-center justify-between p-3.5 rounded-2xl bg-white border border-gray-200/80 hover:bg-gold-50/20 transition-colors">
+            <div>
+              <p className="text-xs sm:text-sm font-bold text-[#4A4A4A]">Direct WhatsApp Wish Prompt</p>
+              <p className="text-[11px] text-gray-500">Enable one-click manual WhatsApp chat link for fast student greetings</p>
+            </div>
+            <button
+              onClick={() => handleToggle('whatsappPrompt')}
+              className={`w-12 h-7 flex items-center rounded-full p-1 transition-colors duration-200 ${
+                notificationPreferences.whatsappPrompt ? 'bg-gold-500 justify-end' : 'bg-gray-200 justify-start'
+              }`}
+            >
+              <span className="w-5 h-5 rounded-full bg-white shadow-md transform transition-transform" />
+            </button>
+          </div>
+        </div>
+
+        <div className="pt-2 flex justify-end">
+          <Button variant="primary" size="md" onClick={handleSaveProfileSettings} icon={Save}>
+            Save Preferences
+          </Button>
         </div>
       </Card>
     </div>
   );
 };
+

@@ -43,9 +43,9 @@ export const WingLeaderDashboard = () => {
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
           <Link to="/add-student">
-            <Button size="md" className="bg-white text-gold-700 hover:bg-gold-50 font-bold shadow-soft-sm" icon={UserPlus}>
+            <Button size="sm" className="bg-white text-gold-700 hover:bg-gold-50 font-bold shadow-soft-sm text-xs sm:text-sm" icon={UserPlus}>
               Add Floor {assignedFloor} Student
             </Button>
           </Link>
@@ -105,8 +105,8 @@ export const WingLeaderDashboard = () => {
           </Link>
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm">
+        <div className="overflow-x-auto w-full min-w-0">
+          <table className="w-full min-w-[620px] text-left text-sm">
             <thead>
               <tr className="border-b border-gray-200 text-xs font-bold text-gray-500 uppercase">
                 <th className="pb-3">Student</th>

@@ -196,9 +196,9 @@ export const StudentList = () => {
         </div>
       ) : (
         /* Table View */
-        <Card>
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
+        <Card className="w-full min-w-0">
+          <div className="overflow-x-auto w-full min-w-0">
+            <table className="w-full min-w-[720px] text-left text-sm">
               <thead>
                 <tr className="border-b border-gray-200 text-xs font-bold text-gray-500 uppercase">
                   <th className="pb-3">Student</th>
