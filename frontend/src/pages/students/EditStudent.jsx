@@ -200,20 +200,22 @@ export const EditStudent = () => {
 
               <div>
                 <label className="block text-xs font-semibold text-[#4A4A4A] uppercase tracking-wider mb-2">
-                  Department
+                  Department / Field of Study *
                 </label>
-                <select
+                <input
+                  list="dept-suggestions-edit"
                   name="department"
                   value={formData.department}
                   onChange={handleChange}
-                  className="w-full h-[52px] px-4 bg-white border border-[#DADADA] rounded-[14px] text-sm text-[#4A4A4A] focus:outline-none focus:border-gold-500 font-medium truncate"
-                >
+                  placeholder="e.g. Computer Science, Commerce, B.Pharmacy..."
+                  required
+                  className="w-full h-[52px] px-4 bg-white border border-[#DADADA] rounded-[14px] text-sm text-[#4A4A4A] focus:outline-none focus:border-gold-500 focus:ring-4 focus:ring-gold-100 font-medium"
+                />
+                <datalist id="dept-suggestions-edit">
                   {DEPARTMENTS.map((d) => (
-                    <option key={d} value={d}>
-                      {d}
-                    </option>
+                    <option key={d} value={d} />
                   ))}
-                </select>
+                </datalist>
               </div>
 
               <Input
