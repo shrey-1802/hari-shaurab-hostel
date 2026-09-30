@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { AnimatedLogo } from '../components/ui/AnimatedLogo';
 import { Button } from '../components/ui/Button';
 import { useAuth } from '../context/AuthContext';
+import { LEADER_ACCOUNTS } from '../services/authService';
 import {
   Mail,
   Lock,
@@ -16,6 +17,7 @@ import {
   Building2,
   KeyRound,
   CheckCircle2,
+  Zap,
 } from 'lucide-react';
 
 export const LandingPage = () => {
@@ -31,6 +33,12 @@ export const LandingPage = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  const handleQuickFill = (account) => {
+    setEmail(account.email);
+    setPassword(account.password);
+    setError('');
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -61,7 +69,7 @@ export const LandingPage = () => {
       }
       navigate('/dashboard');
     } catch (err) {
-      setError(err?.message || 'Authentication error. Please try again.');
+      setError(err?.message || 'Authentication error. Please check your email and password.');
     } finally {
       setLoading(false);
     }
@@ -83,39 +91,39 @@ export const LandingPage = () => {
         <div className="flex items-center gap-2">
           <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
           <span className="text-xs font-semibold text-gray-500 tracking-wider uppercase">
-            System Online
+            Supabase PostgreSQL Active
           </span>
         </div>
 
         <div className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white/80 backdrop-blur-md border border-gold-200/80 shadow-soft-sm text-[11px] font-bold text-gold-800">
           <ShieldCheck className="w-3.5 h-3.5 text-gold-600" />
-          <span>SSL 256-Bit Encrypted</span>
+          <span>RLS Floor & Room Encrypted</span>
         </div>
       </motion.header>
 
       {/* Central Focused Area: Animated Logo & Sign-In/Register Form */}
-      <main className="w-full max-w-[450px] flex flex-col items-center justify-center my-auto py-6 z-10">
+      <main className="w-full max-w-[480px] flex flex-col items-center justify-center my-auto py-4 z-10">
         {/* Animated Brand Logo */}
         <motion.div
           initial={{ opacity: 0, scale: 0.9, y: 15 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           transition={{ duration: 0.8 }}
-          className="mb-8 flex flex-col items-center text-center"
+          className="mb-6 flex flex-col items-center text-center"
         >
           <AnimatedLogo size="hero" showText={false} animated={true} />
         </motion.div>
 
-        {/* 420px Executive Glassmorphism Card */}
+        {/* Executive Glassmorphism Card */}
         <motion.div
           initial={{ opacity: 0, y: 25 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.15 }}
-          className="w-full bg-white/90 backdrop-blur-xl rounded-[28px] border border-gold-200/90 shadow-soft-lg p-7 sm:p-9 relative overflow-hidden"
+          className="w-full bg-white/95 backdrop-blur-xl rounded-[28px] border border-gold-200/90 shadow-soft-lg p-6 sm:p-8 relative overflow-hidden"
         >
           <div className="absolute top-0 right-0 w-32 h-32 bg-gold-200/30 rounded-full blur-2xl pointer-events-none" />
 
           {/* Mode Tabs: Sign In / Create Password */}
-          <div className="flex p-1 bg-gray-100/90 rounded-2xl mb-6">
+          <div className="flex p-1 bg-gray-100/90 rounded-2xl mb-5">
             <button
               type="button"
               onClick={() => {
@@ -146,16 +154,45 @@ export const LandingPage = () => {
             </button>
           </div>
 
-          <div className="text-center mb-6">
+          <div className="text-center mb-5">
             <h2 className="text-xl font-bold text-[#4A4A4A]">
-              {mode === 'login' ? 'Portal Authentication' : 'Create Custom Password'}
+              {mode === 'login' ? 'Hostel Portal Sign In' : 'Create Leader Account'}
             </h2>
             <p className="text-xs text-gray-500 mt-1">
               {mode === 'login'
-                ? 'Enter your leader email & password to access dashboard'
-                : 'Create your personalized leader account & password'}
+                ? 'Sign in with your configured leader credentials'
+                : 'Configure credentials for new hostel leader'}
             </p>
           </div>
+
+          {/* Quick Account Fill Selector */}
+          {mode === 'login' && (
+            <div className="mb-5 p-3 bg-amber-50/70 border border-amber-200/70 rounded-2xl">
+              <div className="flex items-center gap-1.5 text-[11px] font-bold text-amber-800 uppercase tracking-wider mb-2">
+                <Zap className="w-3.5 h-3.5 text-amber-600" />
+                <span>1-Click Select Account:</span>
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                {LEADER_ACCOUNTS.map((acc) => {
+                  const isSelected = email === acc.email;
+                  return (
+                    <button
+                      key={acc.id}
+                      type="button"
+                      onClick={() => handleQuickFill(acc)}
+                      className={`text-[11px] font-semibold px-2.5 py-1.5 rounded-lg border transition-all text-left ${
+                        isSelected
+                          ? 'bg-amber-600 text-white border-amber-600 shadow-sm'
+                          : 'bg-white text-gray-700 border-amber-200 hover:bg-amber-100/60'
+                      }`}
+                    >
+                      {acc.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
           {error && (
             <motion.div
@@ -238,7 +275,7 @@ export const LandingPage = () => {
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="your.email@hostel.in"
+                  placeholder="e.g. wingleader4a@hostel.com"
                   required
                   className="w-full h-[50px] pl-11 pr-4 bg-white border border-[#DADADA] focus:border-gold-500 focus:ring-4 focus:ring-gold-100 rounded-[14px] text-sm text-[#4A4A4A] placeholder-gray-400"
                 />
@@ -267,7 +304,7 @@ export const LandingPage = () => {
                   type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Enter your password"
+                  placeholder="Enter password"
                   required
                   className="w-full h-[50px] pl-11 pr-12 bg-white border border-[#DADADA] focus:border-gold-500 focus:ring-4 focus:ring-gold-100 rounded-[14px] text-sm text-[#4A4A4A] placeholder-gray-400"
                 />

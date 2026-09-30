@@ -1,59 +1,70 @@
 import { apiClient, setToken, removeToken } from './api';
 
-const USERS_STORAGE_KEY = 'hs_registered_users';
+const USERS_STORAGE_KEY = 'hs_registered_users_v3';
 
-const getDefaultUsers = () => {
-  return [
-    {
-      id: 'usr-admin-01',
-      email: 'admin@harisaurabh.com',
-      password: 'admin123',
-      full_name: 'Floor 6 Group Leader A (Admin)',
-      role: 'MAIN_LEADER',
-      assigned_floor: 6,
-    },
-    {
-      id: 'usr-leader-02',
-      email: 'leader.floor6@harisaurabh.com',
-      password: 'admin123',
-      full_name: 'Floor 6 Group Leader B',
-      role: 'MAIN_LEADER',
-      assigned_floor: 6,
-    },
-    {
-      id: 'usr-wing-01',
-      email: 'leader.floor4@harisaurabh.com',
-      password: 'leader123',
-      full_name: 'Floor 4 Wing Leader A',
-      role: 'WING_LEADER',
-      assigned_floor: 4,
-    },
-    {
-      id: 'usr-wing-02',
-      email: 'leader.floor4b@harisaurabh.com',
-      password: 'leader123',
-      full_name: 'Floor 4 Wing Leader B',
-      role: 'WING_LEADER',
-      assigned_floor: 4,
-    },
-  ];
-};
-
-const USERS_STORAGE_VERSION = 'hs_users_v2';
+export const LEADER_ACCOUNTS = [
+  {
+    id: 'usr-main-01',
+    email: 'admin@hostel.com',
+    password: 'Admin@1234',
+    full_name: 'Main Hostel Leader',
+    role: 'MAIN_LEADER',
+    assigned_floor: null,
+    room_start: null,
+    room_end: null,
+    label: 'Main Leader (All Floors)',
+  },
+  {
+    id: 'usr-wing-4a',
+    email: 'wingleader4a@hostel.com',
+    password: 'Wing@1234',
+    full_name: 'Wing Leader (Floor 4: 401-409)',
+    role: 'WING_LEADER',
+    assigned_floor: 4,
+    room_start: '401',
+    room_end: '409',
+    label: 'Floor 4 Leader (401–409)',
+  },
+  {
+    id: 'usr-wing-4b',
+    email: 'wingleader4b@hostel.com',
+    password: 'Wing@1234',
+    full_name: 'Wing Leader (Floor 4: 410-418)',
+    role: 'WING_LEADER',
+    assigned_floor: 4,
+    room_start: '410',
+    room_end: '418',
+    label: 'Floor 4 Leader (410–418)',
+  },
+  {
+    id: 'usr-wing-6a',
+    email: 'wingleader6a@hostel.com',
+    password: 'Wing@1234',
+    full_name: 'Wing Leader (Floor 6: 601-609)',
+    role: 'WING_LEADER',
+    assigned_floor: 6,
+    room_start: '601',
+    room_end: '609',
+    label: 'Floor 6 Leader (601–609)',
+  },
+  {
+    id: 'usr-wing-6b',
+    email: 'wingleader6b@hostel.com',
+    password: 'Wing@1234',
+    full_name: 'Wing Leader (Floor 6: 610-618)',
+    role: 'WING_LEADER',
+    assigned_floor: 6,
+    room_start: '610',
+    room_end: '618',
+    label: 'Floor 6 Leader (610–618)',
+  },
+];
 
 const getStoredUsers = () => {
-  // Purge stale legacy user accounts once on first load
-  if (!localStorage.getItem(USERS_STORAGE_VERSION)) {
-    const fresh = getDefaultUsers();
-    localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(fresh));
-    localStorage.setItem(USERS_STORAGE_VERSION, 'true');
-    return fresh;
-  }
   const data = localStorage.getItem(USERS_STORAGE_KEY);
   if (!data) {
-    const initial = getDefaultUsers();
-    localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(initial));
-    return initial;
+    localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(LEADER_ACCOUNTS));
+    return LEADER_ACCOUNTS;
   }
   return JSON.parse(data);
 };
@@ -61,6 +72,7 @@ const getStoredUsers = () => {
 export const authService = {
   login: async (email, password) => {
     try {
+      // 1. Try Live Render API first
       const data = await apiClient('/auth/login', {
         method: 'POST',
         body: JSON.stringify({ email, password }),
@@ -70,7 +82,7 @@ export const authService = {
       }
       return data;
     } catch {
-      // Local check from saved registered accounts
+      // 2. Offline / local fallback
       const users = getStoredUsers();
       const user = users.find(
         (u) => u.email.toLowerCase() === email.toLowerCase().trim()
@@ -84,15 +96,17 @@ export const authService = {
         return { user, access_token: `jwt-token-${user.id}` };
       }
 
-      // If user is logging in with any new email/password, auto-register them
-      const role = email.toLowerCase().includes('admin') ? 'MAIN_LEADER' : 'WING_LEADER';
+      // If user is logging in with any new email, register them
+      const isMain = email.toLowerCase().includes('admin') || email.toLowerCase().includes('main');
       const newUser = {
         id: `usr-${Date.now()}`,
         email: email.trim(),
         password: password,
         full_name: email.split('@')[0].replace('.', ' ').toUpperCase(),
-        role,
-        assigned_floor: role === 'WING_LEADER' ? 4 : 6,
+        role: isMain ? 'MAIN_LEADER' : 'WING_LEADER',
+        assigned_floor: isMain ? null : 4,
+        room_start: isMain ? null : '401',
+        room_end: isMain ? null : '409',
       };
 
       users.push(newUser);
@@ -102,11 +116,11 @@ export const authService = {
     }
   },
 
-  register: async ({ full_name, email, password, role = 'MAIN_LEADER', assigned_floor = null }) => {
+  register: async ({ full_name, email, password, role = 'MAIN_LEADER', assigned_floor = null, room_start = null, room_end = null }) => {
     try {
       return await apiClient('/auth/register', {
         method: 'POST',
-        body: JSON.stringify({ full_name, email, password, role, assigned_floor }),
+        body: JSON.stringify({ full_name, email, password, role, assigned_floor, room_start, room_end }),
       });
     } catch {
       const users = getStoredUsers();
@@ -116,6 +130,8 @@ export const authService = {
         existing.full_name = full_name;
         existing.role = role;
         existing.assigned_floor = assigned_floor;
+        existing.room_start = room_start;
+        existing.room_end = room_end;
         localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(users));
         setToken(`jwt-token-${existing.id}`);
         return { user: existing, access_token: `jwt-token-${existing.id}` };
@@ -128,6 +144,8 @@ export const authService = {
         password,
         role,
         assigned_floor,
+        room_start,
+        room_end,
       };
 
       users.push(newUser);
