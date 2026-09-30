@@ -4,12 +4,20 @@ import { motion } from 'framer-motion';
 import { Badge } from '../../components/ui/Badge';
 import { Button } from '../../components/ui/Button';
 import { Modal } from '../../components/ui/Modal';
-import { isBirthdayToday, isBirthdayThisWeek, formatDate, calculateAge } from '../../utils/helpers';
+import { WishOnWhatsAppButton } from '../../components/birthdays';
+import {
+  isBirthdayToday,
+  isBirthdayTomorrow,
+  isBirthdayThisWeek,
+  formatDate,
+  calculateAge,
+} from '../../utils/helpers';
 import { Cake, Users, Phone, Sparkles, Heart } from 'lucide-react';
 
 export const StudentCard = ({ student, onDelete }) => {
   const [showFriendsModal, setShowFriendsModal] = useState(false);
   const isToday = isBirthdayToday(student.dob);
+  const isTomorrow = isBirthdayTomorrow(student.dob);
   const isThisWeek = isBirthdayThisWeek(student.dob);
 
   return (
@@ -17,11 +25,13 @@ export const StudentCard = ({ student, onDelete }) => {
       <motion.div
         whileHover={{ y: -6 }}
         transition={{ duration: 0.2 }}
-        className={`w-full max-w-[320px] min-h-[420px] rounded-[24px] bg-white p-6 shadow-soft-sm relative flex flex-col items-center justify-between text-center transition-all duration-300 border ${
+        className={`w-full max-w-[320px] min-h-[430px] rounded-[24px] bg-white p-6 shadow-soft-sm relative flex flex-col items-center justify-between text-center transition-all duration-300 border ${
           isToday
             ? 'border-2 border-gold-400 shadow-gold-glow ring-2 ring-gold-200'
+            : isTomorrow
+            ? 'border-2 border-gold-300 shadow-gold-subtle ring-1 ring-gold-200'
             : isThisWeek
-            ? 'border-gold-300 shadow-gold-subtle'
+            ? 'border-gold-200 shadow-soft-sm'
             : 'border-[#DADADA]/80 hover:border-gold-300 hover:shadow-soft-md'
         }`}
       >
@@ -31,8 +41,13 @@ export const StudentCard = ({ student, onDelete }) => {
             <Cake className="w-3.5 h-3.5" />
             <span>Birthday Today! 🎂</span>
           </div>
+        ) : isTomorrow ? (
+          <div className="absolute -top-3.5 px-3 py-1 bg-gold-100 text-gold-800 border border-gold-300 text-[11px] font-extrabold rounded-full shadow-soft-sm flex items-center gap-1">
+            <Cake className="w-3.5 h-3.5 text-gold-600" />
+            <span>Birthday Tomorrow 🎈</span>
+          </div>
         ) : isThisWeek ? (
-          <div className="absolute -top-3.5 px-3 py-1 bg-gold-100 text-gold-800 border border-gold-300 text-[11px] font-bold rounded-full shadow-sm flex items-center gap-1">
+          <div className="absolute -top-3.5 px-3 py-1 bg-gray-100 text-gray-700 border border-gray-200 text-[11px] font-bold rounded-full shadow-sm flex items-center gap-1">
             <Cake className="w-3.5 h-3.5 text-gold-600" />
             <span>Birthday This Week</span>
           </div>
@@ -85,15 +100,26 @@ export const StudentCard = ({ student, onDelete }) => {
               </Button>
             </Link>
 
-            <Button
-              variant="secondary"
-              size="sm"
-              className="w-full text-xs"
-              onClick={() => setShowFriendsModal(true)}
-              icon={Users}
-            >
-              Friends
-            </Button>
+            {isToday || isTomorrow ? (
+              <WishOnWhatsAppButton
+                studentPhone={student.whatsapp_number || student.student_mobile}
+                studentName={student.full_name}
+                size="sm"
+                variant={isToday ? 'primary' : 'secondary'}
+                label="Wish"
+                className="w-full text-xs font-bold"
+              />
+            ) : (
+              <Button
+                variant="secondary"
+                size="sm"
+                className="w-full text-xs"
+                onClick={() => setShowFriendsModal(true)}
+                icon={Users}
+              >
+                Friends
+              </Button>
+            )}
           </div>
         </div>
       </motion.div>
@@ -142,3 +168,4 @@ export const StudentCard = ({ student, onDelete }) => {
     </>
   );
 };
+

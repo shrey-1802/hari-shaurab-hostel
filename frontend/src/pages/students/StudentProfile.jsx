@@ -2,28 +2,23 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useStudents } from '../../context/StudentContext';
 import { useNotifications } from '../../context/NotificationContext';
-import { birthdayService } from '../../services/birthdayService';
+import { BirthdayProfileSection, WishOnWhatsAppButton } from '../../components/birthdays';
 import { Card } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
 import { Button } from '../../components/ui/Button';
 import { Modal } from '../../components/ui/Modal';
-import { formatDate, calculateAge, isBirthdayToday, isBirthdayThisWeek } from '../../utils/helpers';
+import { formatDate, calculateAge, isBirthdayToday, isBirthdayTomorrow } from '../../utils/helpers';
 import {
   ArrowLeft,
   Edit3,
   Trash2,
   Cake,
   Phone,
-  Mail,
   Building2,
   GraduationCap,
   BookOpen,
   Users,
-  MessageCircle,
-  FileText,
   Calendar,
-  Sparkles,
-  CheckCircle2,
 } from 'lucide-react';
 
 export const StudentProfile = () => {
@@ -33,7 +28,6 @@ export const StudentProfile = () => {
   const { showToast } = useNotifications();
   const [student, setStudent] = useState(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [sendingGreeting, setSendingGreeting] = useState(false);
 
   useEffect(() => {
     const found = students.find((s) => s.id === id);
@@ -57,24 +51,12 @@ export const StudentProfile = () => {
   }
 
   const isToday = isBirthdayToday(student.dob);
-  const isThisWeek = isBirthdayThisWeek(student.dob);
+  const isTomorrow = isBirthdayTomorrow(student.dob);
 
   const handleDelete = async () => {
     await deleteStudent(student.id);
     showToast(`${student.full_name}'s record has been deleted`, 'info');
     navigate('/students');
-  };
-
-  const handleSendGreeting = async () => {
-    setSendingGreeting(true);
-    try {
-      await birthdayService.sendWhatsAppGreeting(student.id, 'Happy Birthday from Hari-Saurabh Hostel!');
-      showToast(`Birthday WhatsApp message dispatched to ${student.student_mobile}`, 'success');
-    } catch (err) {
-      showToast('WhatsApp API dispatch failed', 'error');
-    } finally {
-      setSendingGreeting(false);
-    }
   };
 
   return (
@@ -114,7 +96,7 @@ export const StudentProfile = () => {
           <div className="relative">
             <div className="w-[120px] h-[120px] rounded-full p-1.5 bg-gradient-to-tr from-gold-400 to-amber-300 shadow-soft-md">
               <img
-                src={student.profile_image_url}
+                src={student.profile_image_url || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&auto=format&fit=crop&q=80'}
                 alt={student.full_name}
                 className="w-full h-full rounded-full object-cover"
               />
@@ -132,6 +114,11 @@ export const StudentProfile = () => {
               <Badge variant="gold" size="md">Floor {student.floor_number}</Badge>
               <Badge variant="gray" size="md">Room {student.room_number}</Badge>
               {isToday && <Badge variant="birthday" size="md">Birthday Today! 🎂</Badge>}
+              {isTomorrow && (
+                <span className="px-3 py-1 rounded-xl bg-gold-100 text-gold-800 border border-gold-300 text-xs font-bold">
+                  Birthday Tomorrow 🎈
+                </span>
+              )}
             </div>
 
             <p className="text-sm font-medium text-gray-500 flex items-center justify-center md:justify-start gap-2">
@@ -151,31 +138,22 @@ export const StudentProfile = () => {
             </div>
           </div>
 
-          {/* WhatsApp Direct Action */}
-          <div className="flex flex-col gap-2 shrink-0">
-            <a
-              href={`https://wa.me/${student.whatsapp_number?.replace(/\D/g, '')}`}
-              target="_blank"
-              rel="noreferrer"
-            >
-              <Button variant="primary" size="md" icon={MessageCircle} className="w-full">
-                WhatsApp Chat
-              </Button>
-            </a>
-            {isToday && (
-              <Button
-                variant="secondary"
-                size="sm"
-                isLoading={sendingGreeting}
-                onClick={handleSendGreeting}
-                icon={Sparkles}
-              >
-                Send Greeting
-              </Button>
-            )}
+          {/* Manual WhatsApp Direct Action (Strictly Manual, opens https://wa.me/{phone}) */}
+          <div className="flex flex-col gap-2 shrink-0 w-full sm:w-auto">
+            <WishOnWhatsAppButton
+              studentPhone={student.whatsapp_number || student.student_mobile}
+              studentName={student.full_name}
+              variant={isToday ? 'primary' : 'whatsapp'}
+              size="md"
+              label="Wish on WhatsApp"
+              className="w-full"
+            />
           </div>
         </div>
       </Card>
+
+      {/* Dedicated Birthday Information Section (Requested Feature) */}
+      <BirthdayProfileSection student={student} />
 
       {/* 2-Column Desktop Grid Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -302,3 +280,4 @@ export const StudentProfile = () => {
     </div>
   );
 };
+

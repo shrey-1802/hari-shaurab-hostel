@@ -2,6 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { useStudents } from '../../context/StudentContext';
 import { useNotifications } from '../../context/NotificationContext';
+import { BirthdayDashboardSection, UpcomingBirthdaysWidget } from '../../components/birthdays';
 import { Card } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
 import { Button } from '../../components/ui/Button';
@@ -14,15 +15,15 @@ import {
   ArrowRight,
   TrendingUp,
   Sparkles,
-  Calendar,
-  MessageCircle,
-  ExternalLink,
 } from 'lucide-react';
-import { isBirthdayToday, formatDate } from '../../utils/helpers';
+import { isBirthdayToday, isBirthdayTomorrow } from '../../utils/helpers';
 
 export const MainLeaderDashboard = () => {
   const { students, stats } = useStudents();
-  const { notifications, unreadCount } = useNotifications();
+  const { unreadCount } = useNotifications();
+
+  // Approaching alerts count (Today + Tomorrow)
+  const approachingCount = students.filter((s) => isBirthdayToday(s.dob) || isBirthdayTomorrow(s.dob)).length;
 
   return (
     <div className="space-y-8">
@@ -37,7 +38,7 @@ export const MainLeaderDashboard = () => {
             Hari-Saurabh Command Center
           </h2>
           <p className="text-amber-100 text-xs sm:text-sm">
-            All 5 residential floors active • Real-time student roster & automated birthday sync
+            All 5 residential floors active • Real-time student roster & manual WhatsApp birthday wish engine
           </p>
         </div>
 
@@ -94,20 +95,20 @@ export const MainLeaderDashboard = () => {
         {/* Card 3: Upcoming Birthdays */}
         <Card hover={true} className="border-l-4 border-l-amber-500">
           <div className="flex items-center justify-between mb-4">
-            <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">Birthdays This Week</span>
+            <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">Birthdays Approaching</span>
             <div className="w-10 h-10 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center">
               <Cake className="w-5 h-5" />
             </div>
           </div>
           <div className="text-3xl font-black text-amber-600">
-            {stats.weekBirthdaysCount}
+            {approachingCount}
           </div>
           <div className="flex items-center justify-between mt-3 text-xs text-gray-500">
             <span className="font-semibold text-amber-700">
-              {stats.todayBirthdaysCount > 0 ? `🎉 ${stats.todayBirthdaysCount} Today!` : 'No birthdays today'}
+              {stats.todayBirthdaysCount > 0 ? `🎉 ${stats.todayBirthdaysCount} Today!` : '1 Day Before / Today'}
             </span>
             <Link to="/birthdays" className="font-bold text-gold-600 hover:underline">
-              Automations →
+              Birthday Hub →
             </Link>
           </div>
         </Card>
@@ -122,7 +123,7 @@ export const MainLeaderDashboard = () => {
           </div>
           <div className="text-3xl font-black text-[#4A4A4A]">{unreadCount} Unread</div>
           <div className="flex items-center justify-between mt-3 text-xs text-gray-500">
-            <span>24h & 6h Triggers Active</span>
+            <span>Proactive Wing Alerts</span>
             <Link to="/notifications" className="font-bold text-purple-600 hover:underline">
               Review →
             </Link>
@@ -130,7 +131,10 @@ export const MainLeaderDashboard = () => {
         </Card>
       </div>
 
-      {/* Floor Occupancy Distribution & Today's Celebrations */}
+      {/* Dedicated Birthday Alert Dashboard Section */}
+      <BirthdayDashboardSection />
+
+      {/* Floor Occupancy Distribution & Widget Row */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
         {/* Floor Occupancy Visualizer (7 cols) */}
         <div className="lg:col-span-7">
@@ -170,7 +174,7 @@ export const MainLeaderDashboard = () => {
             </div>
 
             <div className="mt-6 pt-4 border-t border-gray-100 flex items-center justify-between">
-              <span className="text-xs text-gray-500">Need to reassign rooms?</span>
+              <span className="text-xs text-gray-500">Need to view student directory?</span>
               <Link to="/students">
                 <Button variant="secondary" size="sm" icon={ArrowRight}>
                   Open Directory
@@ -180,92 +184,12 @@ export const MainLeaderDashboard = () => {
           </Card>
         </div>
 
-        {/* Birthday Highlights (5 cols) */}
+        {/* Upcoming Birthdays Quick Widget (5 cols) */}
         <div className="lg:col-span-5">
-          <Card className="h-full border-t-4 border-t-gold-500">
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center gap-2">
-                <Cake className="w-5 h-5 text-gold-600" />
-                <h3 className="text-lg font-bold text-[#4A4A4A]">Birthday Center</h3>
-              </div>
-              <Link to="/birthdays" className="text-xs font-bold text-gold-600 hover:underline">
-                View All
-              </Link>
-            </div>
-
-            {stats.todayBirthdays.length > 0 ? (
-              <div className="space-y-4">
-                {stats.todayBirthdays.map((student) => (
-                  <div
-                    key={student.id}
-                    className="p-4 rounded-2xl bg-gradient-to-r from-gold-50 to-amber-50/60 border border-gold-300 shadow-soft-sm relative overflow-hidden"
-                  >
-                    <div className="flex items-center gap-3">
-                      <img
-                        src={student.profile_image_url}
-                        alt={student.full_name}
-                        className="w-12 h-12 rounded-full object-cover ring-2 ring-gold-400"
-                      />
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <h4 className="text-sm font-bold text-[#4A4A4A] truncate">{student.full_name}</h4>
-                          <span className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-gold-500 text-white animate-pulse">
-                            Today 🎂
-                          </span>
-                        </div>
-                        <p className="text-xs text-gray-500">
-                          Floor {student.floor_number} • Room {student.room_number}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="mt-3 flex items-center gap-2">
-                      <Link to={`/student/${student.id}`} className="flex-1">
-                        <Button size="sm" variant="secondary" className="w-full text-xs">
-                          Profile
-                        </Button>
-                      </Link>
-                      <a
-                        href={`https://wa.me/${student.whatsapp_number?.replace(/\D/g, '')}?text=Happy%20Birthday%20${encodeURIComponent(student.full_name)}!%20Wishing%20you%20a%20wonderful%20year%20ahead%20from%20Hari-Saurabh%20Hostel.`}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="flex-1"
-                      >
-                        <Button size="sm" variant="primary" className="w-full text-xs" icon={MessageCircle}>
-                          WhatsApp
-                        </Button>
-                      </a>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-8 text-gray-400">
-                <Cake className="w-10 h-10 mx-auto mb-2 text-gray-300" />
-                <p className="text-sm font-medium">No birthdays today</p>
-                <p className="text-xs text-gray-400 mt-1">Check upcoming events below</p>
-              </div>
-            )}
-
-            {/* Upcoming peek */}
-            <div className="mt-6 pt-4 border-t border-gray-100">
-              <h5 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">
-                Coming Up This Week ({stats.weekBirthdays.length})
-              </h5>
-              <div className="space-y-2">
-                {stats.weekBirthdays.slice(0, 3).map((student) => (
-                  <div key={student.id} className="flex items-center justify-between text-xs py-1.5 px-2 rounded-xl hover:bg-gray-50">
-                    <div className="flex items-center gap-2">
-                      <span className="w-2 h-2 rounded-full bg-amber-400"></span>
-                      <span className="font-semibold text-gray-700">{student.full_name}</span>
-                    </div>
-                    <span className="text-gray-500 font-medium">{formatDate(student.dob)}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </Card>
+          <UpcomingBirthdaysWidget maxItems={4} className="h-full" />
         </div>
       </div>
     </div>
   );
 };
+
