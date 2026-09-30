@@ -47,8 +47,12 @@ export const AuthProvider = ({ children }) => {
     setUser(null);
   };
 
-  const isMainLeader = user?.role === 'MAIN_LEADER';
-  const isWingLeader = user?.role === 'WING_LEADER';
+  const normalizedRole = (user?.role || '').toUpperCase();
+  const isMainLeader = normalizedRole === 'MAIN_LEADER';
+  const isWingLeader = normalizedRole === 'WING_LEADER';
+  const assignedFloor = user?.floor_number ?? user?.assigned_floor ?? null;
+  const roomStart = user?.room_start ?? null;
+  const roomEnd = user?.room_end ?? null;
 
   return (
     <AuthContext.Provider
@@ -60,7 +64,9 @@ export const AuthProvider = ({ children }) => {
         logout,
         isMainLeader,
         isWingLeader,
-        assignedFloor: user?.assigned_floor || null,
+        assignedFloor,
+        roomStart,
+        roomEnd,
       }}
     >
       {children}
