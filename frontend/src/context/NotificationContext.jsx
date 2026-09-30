@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { notificationService } from '../services/notificationService';
+import { pushNotificationService } from '../services/pushNotificationService';
 
 const NotificationContext = createContext();
 
@@ -20,6 +21,16 @@ export const NotificationProvider = ({ children }) => {
     fetchNotifications();
   }, []);
 
+  const syncBirthdays = async (students = [], user = null) => {
+    if (!students || students.length === 0) return;
+    try {
+      await notificationService.syncBirthdayNotifications(students, user);
+      await fetchNotifications();
+    } catch (err) {
+      console.error('Failed to sync birthday notifications:', err);
+    }
+  };
+
   const showToast = (message, type = 'info') => {
     setToast({ message, type, id: Date.now() });
     setTimeout(() => {
@@ -37,6 +48,11 @@ export const NotificationProvider = ({ children }) => {
     setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
   };
 
+  const clearAll = async () => {
+    await notificationService.clearAll();
+    setNotifications([]);
+  };
+
   const unreadCount = notifications.filter(n => !n.is_read).length;
 
   return (
@@ -46,9 +62,12 @@ export const NotificationProvider = ({ children }) => {
         unreadCount,
         markAsRead,
         markAllAsRead,
+        clearAll,
         fetchNotifications,
+        syncBirthdays,
         showToast,
         toast,
+        pushNotificationService,
       }}
     >
       {children}
@@ -57,3 +76,4 @@ export const NotificationProvider = ({ children }) => {
 };
 
 export const useNotifications = () => useContext(NotificationContext);
+

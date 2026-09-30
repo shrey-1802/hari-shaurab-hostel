@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
 import { studentService } from '../services/studentService';
+import { notificationService } from '../services/notificationService';
 import { isBirthdayToday, isBirthdayThisWeek } from '../utils/helpers';
 import { useAuth } from './AuthContext';
 import { ROLES } from '../utils/constants';
@@ -19,6 +20,8 @@ export const StudentProvider = ({ children }) => {
     try {
       const data = await studentService.getAll();
       setStudents(data);
+      // Synchronize database notifications & browser push alerts for Today and Tomorrow
+      notificationService.syncBirthdayNotifications(data, user).catch(() => {});
     } catch (error) {
       console.error('Failed to load students:', error);
     } finally {
@@ -28,7 +31,7 @@ export const StudentProvider = ({ children }) => {
 
   useEffect(() => {
     fetchStudents();
-  }, []);
+  }, [user]);
 
   // Filter based on user role (Floor leader only sees their floor) and UI filters
   const visibleStudents = useMemo(() => {
