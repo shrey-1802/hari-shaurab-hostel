@@ -1,12 +1,14 @@
 """
 Seed script to create initial admin and 4 wing leader users with real emails and names.
 Allocations:
+- Main Leader:
+    - PriyankBhai (priyankshah3690@gmail.com)
 - Floor 4:
     - AryanBhai: Floor 4, Rooms 401–409 (aryansinhc673@gmail.com)
     - ShreemadBhai: Floor 4, Rooms 410–418 (shreemadgandhi369@gmail.com)
 - Floor 6:
     - JeetBhai: Floor 6, Rooms 601–609 (jeetsinhsolanki749@gmail.com)
-    - Param: Floor 6, Rooms 610–618 (patelparam2111@gmail.com)
+    - ParamBhai: Floor 6, Rooms 610–618 (patelparam2111@gmail.com)
 
 Usage:
     python -m app.scripts.seed_users
@@ -29,11 +31,11 @@ async def seed():
             return
 
         users = [
-            # Main Leaders (Full hostel access)
+            # Main Leader (Full hostel access)
             User(
-                full_name="Main Leader",
-                email="admin@hostel.com",
-                hashed_password=hash_password("Admin@1234"),
+                full_name="PriyankBhai",
+                email="priyankshah3690@gmail.com",
+                hashed_password=hash_password("Priyank@0369"),
                 role=UserRole.MAIN_LEADER,
                 floor_number=None,
                 room_start=None,
@@ -43,7 +45,7 @@ async def seed():
             User(
                 full_name="AryanBhai (Floor 4: 401-409)",
                 email="aryansinhc673@gmail.com",
-                hashed_password=hash_password("Wing@1234"),
+                hashed_password=hash_password("Aryan@0369"),
                 role=UserRole.WING_LEADER,
                 floor_number=4,
                 room_start="401",
@@ -52,7 +54,7 @@ async def seed():
             User(
                 full_name="ShreemadBhai (Floor 4: 410-418)",
                 email="shreemadgandhi369@gmail.com",
-                hashed_password=hash_password("Wing@1234"),
+                hashed_password=hash_password("Shreemad@0369"),
                 role=UserRole.WING_LEADER,
                 floor_number=4,
                 room_start="410",
@@ -62,16 +64,16 @@ async def seed():
             User(
                 full_name="JeetBhai (Floor 6: 601-609)",
                 email="jeetsinhsolanki749@gmail.com",
-                hashed_password=hash_password("Wing@1234"),
+                hashed_password=hash_password("Jeet@0369"),
                 role=UserRole.WING_LEADER,
                 floor_number=6,
                 room_start="601",
                 room_end="609",
             ),
             User(
-                full_name="Param (Floor 6: 610-618)",
+                full_name="ParamBhai (Floor 6: 610-618)",
                 email="patelparam2111@gmail.com",
-                hashed_password=hash_password("Wing@1234"),
+                hashed_password=hash_password("Param@0369"),
                 role=UserRole.WING_LEADER,
                 floor_number=6,
                 room_start="610",

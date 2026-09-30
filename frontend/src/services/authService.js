@@ -1,13 +1,13 @@
 import { apiClient, setToken, removeToken } from './api';
 
-const USERS_STORAGE_KEY = 'hs_registered_users_v5';
+const USERS_STORAGE_KEY = 'hs_registered_users_v6';
 
 export const LEADER_ACCOUNTS = [
   {
     id: 'usr-main-01',
-    email: 'admin@hostel.com',
-    password: 'Admin@1234',
-    full_name: 'Main Hostel Leader',
+    email: 'priyankshah3690@gmail.com',
+    password: 'Priyank@0369',
+    full_name: 'PriyankBhai',
     role: 'MAIN_LEADER',
     assigned_floor: null,
     room_start: null,
@@ -17,46 +17,46 @@ export const LEADER_ACCOUNTS = [
   {
     id: 'usr-wing-4a',
     email: 'aryansinhc673@gmail.com',
-    password: 'Wing@1234',
+    password: 'Aryan@0369',
     full_name: 'AryanBhai (Floor 4: 401-409)',
     role: 'WING_LEADER',
     assigned_floor: 4,
     room_start: '401',
     room_end: '409',
-    label: 'AryanBhai (401–409)',
+    label: 'Floor 4 Leader (401–409)',
   },
   {
     id: 'usr-wing-4b',
     email: 'shreemadgandhi369@gmail.com',
-    password: 'Wing@1234',
+    password: 'Shreemad@0369',
     full_name: 'ShreemadBhai (Floor 4: 410-418)',
     role: 'WING_LEADER',
     assigned_floor: 4,
     room_start: '410',
     room_end: '418',
-    label: 'ShreemadBhai (410–418)',
+    label: 'Floor 4 Leader (410–418)',
   },
   {
     id: 'usr-wing-6a',
     email: 'jeetsinhsolanki749@gmail.com',
-    password: 'Wing@1234',
+    password: 'Jeet@0369',
     full_name: 'JeetBhai (Floor 6: 601-609)',
     role: 'WING_LEADER',
     assigned_floor: 6,
     room_start: '601',
     room_end: '609',
-    label: 'JeetBhai (601–609)',
+    label: 'Floor 6 Leader (601–609)',
   },
   {
     id: 'usr-wing-6b',
     email: 'patelparam2111@gmail.com',
-    password: 'Wing@1234',
-    full_name: 'Param (Floor 6: 610-618)',
+    password: 'Param@0369',
+    full_name: 'ParamBhai (Floor 6: 610-618)',
     role: 'WING_LEADER',
     assigned_floor: 6,
     room_start: '610',
     room_end: '618',
-    label: 'Param (610–618)',
+    label: 'Floor 6 Leader (610–618)',
   },
 ];
 
