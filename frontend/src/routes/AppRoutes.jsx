@@ -12,6 +12,7 @@ import { EditStudent } from '../pages/students/EditStudent';
 import { BirthdayDashboard } from '../pages/birthdays/BirthdayDashboard';
 import { NotificationCenter } from '../pages/notifications/NotificationCenter';
 import { Settings } from '../pages/settings/Settings';
+import { NotFound } from '../pages/NotFound';
 import { ProtectedRoute } from './ProtectedRoute';
 
 export const AppRoutes = () => {
@@ -37,8 +38,8 @@ export const AppRoutes = () => {
         </Route>
       </Route>
 
-      {/* Fallback */}
-      <Route path="*" element={<Navigate to="/" replace />} />
+      {/* Custom 404 Not Found */}
+      <Route path="*" element={<NotFound />} />
     </Routes>
   );
 };

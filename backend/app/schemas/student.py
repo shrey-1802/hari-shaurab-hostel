@@ -63,6 +63,8 @@ class StudentResponse(StudentBase):
     id: UUID
     profile_picture_url: Optional[str] = None
     created_by: Optional[UUID] = None
+    creator_name: Optional[str] = None
+    creator_email: Optional[str] = None
     created_at: datetime
     updated_at: datetime
 

@@ -14,7 +14,7 @@ import {
 } from '../../utils/helpers';
 import { Cake, Users, Phone, Sparkles, Heart } from 'lucide-react';
 
-export const StudentCard = ({ student, onDelete }) => {
+export const StudentCard = ({ student, onDelete, isMainLeader = false }) => {
   const [showFriendsModal, setShowFriendsModal] = useState(false);
   const isToday = isBirthdayToday(student.dob);
   const isTomorrow = isBirthdayTomorrow(student.dob);
@@ -83,6 +83,12 @@ export const StudentCard = ({ student, onDelete }) => {
           <p className="text-xs text-gray-500 truncate" title={student.department}>
             {student.department}
           </p>
+
+          {isMainLeader && student.creator_name && (
+            <div className="text-[11px] text-amber-800 bg-amber-50 px-2 py-0.5 rounded-lg border border-amber-200 truncate font-semibold">
+              Filled by: {student.creator_name}
+            </div>
+          )}
         </div>
 
         {/* BOTTOM: Date of Birth & Action Buttons */}

@@ -76,7 +76,7 @@ export const Sidebar = ({ onClose, isMobile = false }) => {
           <p className="text-sm font-extrabold text-[#4A4A4A] truncate">{user?.full_name}</p>
           <div className="flex items-center justify-between mt-2 pt-2 border-t border-gold-200/60">
             <span className="text-[11px] font-semibold text-gray-500">
-              {isMainLeader ? 'All Floors Access' : `Floor ${user?.assigned_floor} Only`}
+              {isMainLeader ? 'All Floors Access' : `Floor ${user?.floor_number || user?.assigned_floor} Only`}
             </span>
             <span className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-gold-500 text-white">
               {user?.role}

@@ -92,7 +92,7 @@ export const Navbar = ({ isLanding = false, onToggleMobileMenu, isMobileMenuOpen
                       {user.full_name}
                     </span>
                     <span className="text-[10px] font-semibold text-gold-600 uppercase">
-                      {isMainLeader ? 'Main Leader' : `Floor ${user.assigned_floor} Leader`}
+                      {isMainLeader ? 'Main Leader' : `Floor ${user.floor_number || user.assigned_floor} Leader`}
                     </span>
                   </div>
                 </Link>

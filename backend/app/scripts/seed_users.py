@@ -31,11 +31,20 @@ async def seed():
             return
 
         users = [
-            # Main Leader (Full hostel access)
+            # Main Leaders (Full hostel access)
             User(
                 full_name="PriyankBhai",
                 email="priyankshah3690@gmail.com",
                 hashed_password=hash_password("Priyank@0369"),
+                role=UserRole.MAIN_LEADER,
+                floor_number=None,
+                room_start=None,
+                room_end=None,
+            ),
+            User(
+                full_name="ShyamBhai",
+                email="shyamviththalani@gmail.com",
+                hashed_password=hash_password("Shyam@0369"),
                 role=UserRole.MAIN_LEADER,
                 floor_number=None,
                 room_start=None,

@@ -7,6 +7,7 @@ import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { FLOORS, DEPARTMENTS } from '../../utils/constants';
+import { usePageTitle } from '../../utils/usePageTitle';
 import {
   ArrowLeft,
   UserPlus,
@@ -21,13 +22,19 @@ import {
 
 export const AddStudent = () => {
   const navigate = useNavigate();
-  const { addStudent } = useStudents();
+  const { addStudent, getRoomOccupancy, isRoomInScope } = useStudents();
   const { user, isMainLeader } = useAuth();
   const { showToast } = useNotifications();
+  usePageTitle('Add New Student');
+
+  const assignedFloor = isMainLeader ? 4 : (user?.floor_number || user?.assigned_floor || 4);
+  const roomStart = user?.room_start;
+  const roomEnd = user?.room_end;
 
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     full_name: '',
+    student_number: '',
     dob: '',
     student_mobile: '',
     parent_name: '',
@@ -38,11 +45,34 @@ export const AddStudent = () => {
     hobby: '',
     hostel_friends: '',
     non_hostel_friends: '',
-    floor_number: isMainLeader ? 4 : user?.assigned_floor || 4,
-    room_number: '',
+    floor_number: assignedFloor,
+    room_number: roomStart || '',
     whatsapp_number: '',
     profile_image_url: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=300&auto=format&fit=crop&q=80',
   });
+
+  // Calculate available room numbers for the active floor
+  const floorRoomList = React.useMemo(() => {
+    const list = [];
+    const floor = Number(formData.floor_number);
+    const startNum = !isMainLeader && roomStart ? parseInt(roomStart.replace(/\D/g, ''), 10) : floor * 100 + 1;
+    const endNum = !isMainLeader && roomEnd ? parseInt(roomEnd.replace(/\D/g, ''), 10) : floor * 100 + 18;
+
+    for (let r = startNum; r <= endNum; r++) {
+      const roomStr = String(r);
+      const occ = getRoomOccupancy(floor, roomStr);
+      list.push({
+        roomNumber: roomStr,
+        ...occ,
+      });
+    }
+    return list;
+  }, [formData.floor_number, isMainLeader, roomStart, roomEnd, getRoomOccupancy]);
+
+  const selectedRoomOccupancy = React.useMemo(() => {
+    if (!formData.room_number) return null;
+    return getRoomOccupancy(formData.floor_number, formData.room_number);
+  }, [formData.floor_number, formData.room_number, getRoomOccupancy]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -62,13 +92,43 @@ export const AddStudent = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    // 1. Validate wing leader room range
+    if (!isMainLeader && roomStart && roomEnd) {
+      if (!isRoomInScope(formData.room_number, roomStart, roomEnd)) {
+        showToast(`Access denied: You are assigned to rooms ${roomStart}–${roomEnd} only.`, 'error');
+        return;
+      }
+    }
+
+    // 2. Validate max room capacity = 2
+    const occ = getRoomOccupancy(formData.floor_number, formData.room_number);
+    if (occ.isFull) {
+      showToast(
+        `Room ${formData.room_number} is already at full capacity (2/2 students allocated). Please select another room.`,
+        'error'
+      );
+      return;
+    }
+
+    // 3. Validate student number
+    if (!formData.student_number.trim()) {
+      showToast('Student Number / Enrollment ID is required.', 'error');
+      return;
+    }
+
     setLoading(true);
     try {
-      const created = await addStudent(formData);
-      showToast(`${formData.full_name} enrolled successfully!`, 'success');
+      // Map dob to date_of_birth for the API
+      const submitData = {
+        ...formData,
+        date_of_birth: formData.dob,
+      };
+      const created = await addStudent(submitData);
+      showToast(`${formData.full_name} registered successfully in Room ${formData.room_number}!`, 'success');
       navigate(`/student/${created.id}`);
     } catch (error) {
-      showToast('Error registering student. Please check fields.', 'error');
+      showToast(error.message || 'Error registering student. Please check fields.', 'error');
     } finally {
       setLoading(false);
     }
@@ -84,9 +144,16 @@ export const AddStudent = () => {
           <ArrowLeft className="w-4 h-4" />
           Back to Directory
         </Link>
-        <span className="text-xs font-bold text-gold-600 bg-gold-50 px-3 py-1.5 rounded-full border border-gold-200">
-          New Registration
-        </span>
+        <div className="flex items-center gap-2">
+          {!isMainLeader && roomStart && (
+            <span className="text-xs font-bold text-gray-600 bg-gray-100 px-3 py-1.5 rounded-full border border-gray-200">
+              Assigned Rooms: {roomStart}–{roomEnd}
+            </span>
+          )}
+          <span className="text-xs font-bold text-gold-600 bg-gold-50 px-3 py-1.5 rounded-full border border-gold-200">
+            Max 2 Students / Room
+          </span>
+        </div>
       </div>
 
       <Card>
@@ -96,7 +163,9 @@ export const AddStudent = () => {
           </div>
           <div>
             <h2 className="text-xl font-extrabold text-[#4A4A4A]">Register New Resident</h2>
-            <p className="text-xs text-gray-500">Add student profile with room allocation & friends</p>
+            <p className="text-xs text-gray-500">
+              Add student profile with strict room allocation (2 students per room capacity)
+            </p>
           </div>
         </div>
 
@@ -134,6 +203,14 @@ export const AddStudent = () => {
                 required
               />
               <Input
+                label="Student Number / Enrollment ID *"
+                name="student_number"
+                value={formData.student_number}
+                onChange={handleChange}
+                placeholder="e.g. HS-2024-001 or Enrollment No."
+                required
+              />
+              <Input
                 label="Date of Birth *"
                 name="dob"
                 type="date"
@@ -161,7 +238,7 @@ export const AddStudent = () => {
 
           <div className="space-y-4">
             <h4 className="text-xs font-bold uppercase tracking-wider text-gold-700 flex items-center gap-2">
-              <Building2 className="w-4 h-4" /> 2. Room & Floor Allocation
+              <Building2 className="w-4 h-4" /> 2. Room & Floor Allocation (2 Students / Room)
             </h4>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
@@ -183,15 +260,63 @@ export const AddStudent = () => {
                 </select>
               </div>
 
-              <Input
-                label="Room Number *"
-                name="room_number"
-                value={formData.room_number}
-                onChange={handleChange}
-                placeholder="e.g. 201-A or 304"
-                required
-              />
+              <div>
+                <label className="block text-xs font-semibold text-[#4A4A4A] uppercase tracking-wider mb-2">
+                  Select Room (Occupancy Status) *
+                </label>
+                <select
+                  name="room_number"
+                  value={formData.room_number}
+                  onChange={handleChange}
+                  required
+                  className="w-full h-[52px] px-4 bg-white border border-[#DADADA] rounded-[14px] text-sm text-[#4A4A4A] focus:outline-none focus:border-gold-500 focus:ring-4 focus:ring-gold-100 font-medium"
+                >
+                  <option value="">-- Choose Assigned Room --</option>
+                  {floorRoomList.map((r) => (
+                    <option
+                      key={r.roomNumber}
+                      value={r.roomNumber}
+                      disabled={r.isFull}
+                      className={r.isFull ? 'text-gray-400 bg-gray-100' : 'text-gray-800'}
+                    >
+                      Room {r.roomNumber} — {r.occupied}/2 {r.isFull ? '(FULL - 2/2)' : `(${r.availableSlots} slot available)`}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
+
+            {/* Room Occupancy Indicator Banner */}
+            {selectedRoomOccupancy && (
+              <div
+                className={`p-3.5 rounded-2xl text-xs font-medium border flex items-center justify-between ${
+                  selectedRoomOccupancy.isFull
+                    ? 'bg-red-50 border-red-200 text-red-700'
+                    : selectedRoomOccupancy.count === 1
+                    ? 'bg-amber-50 border-amber-200 text-amber-800'
+                    : 'bg-green-50 border-green-200 text-green-800'
+                }`}
+              >
+                <div>
+                  <span className="font-bold">
+                    Room {formData.room_number} Status:{' '}
+                  </span>
+                  {selectedRoomOccupancy.isFull ? (
+                    <span>FULL (2 of 2 students allocated). Cannot add more students.</span>
+                  ) : selectedRoomOccupancy.count === 1 ? (
+                    <span>
+                      1 of 2 slots occupied (1 slot available). Roommate:{' '}
+                      <strong>{selectedRoomOccupancy.students[0]?.full_name}</strong>
+                    </span>
+                  ) : (
+                    <span>Empty room (2 of 2 slots available).</span>
+                  )}
+                </div>
+                <span className="font-black px-2.5 py-1 rounded-xl bg-white border shadow-sm">
+                  {selectedRoomOccupancy.count} / 2 Allocated
+                </span>
+              </div>
+            )}
           </div>
 
           <div className="space-y-4">

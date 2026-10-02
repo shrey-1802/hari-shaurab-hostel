@@ -9,15 +9,17 @@ import { Badge } from '../../components/ui/Badge';
 import { Button } from '../../components/ui/Button';
 import { Bell, Cake, Info, CheckCheck, Sparkles, Clock, ArrowRight } from 'lucide-react';
 import { formatDate, formatBirthdayDateOnly, isBirthdayToday, isBirthdayTomorrow, getDaysUntilBirthday } from '../../utils/helpers';
+import { usePageTitle } from '../../utils/usePageTitle';
 
 export const NotificationCenter = () => {
   const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotifications();
   const { students } = useStudents();
   const { user, isMainLeader } = useAuth();
+  usePageTitle('Notifications');
 
   // Filter students based on role for birthday alerts
   const relevantStudents = students.filter((s) => {
-    if (!isMainLeader && user?.assigned_floor) {
+    if (!isMainLeader && (user?.floor_number || user?.assigned_floor)) {
       return s.floor_number === user.assigned_floor;
     }
     return true;

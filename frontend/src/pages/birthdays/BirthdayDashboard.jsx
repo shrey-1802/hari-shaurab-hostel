@@ -7,6 +7,7 @@ import { Card } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
 import { Button } from '../../components/ui/Button';
 import { formatDate, getDaysUntilBirthday, isBirthdayToday, isBirthdayTomorrow } from '../../utils/helpers';
+import { usePageTitle } from '../../utils/usePageTitle';
 import {
   Cake,
   Sparkles,
@@ -21,6 +22,7 @@ import {
 export const BirthdayDashboard = () => {
   const { students, stats } = useStudents();
   const { showToast } = useNotifications();
+  usePageTitle('Birthdays & Alerts');
 
   // 1 Day Before (Tomorrow) & Today counts
   const todayBirthdays = students.filter((s) => isBirthdayToday(s.dob));

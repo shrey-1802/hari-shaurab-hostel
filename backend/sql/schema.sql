@@ -68,11 +68,11 @@ create table if not exists public.rooms (
     id uuid primary key default gen_random_uuid(),
     floor_id uuid not null references public.floors(id) on delete restrict,
     room_number varchar(30) not null,
-    capacity integer not null default 3,
+    capacity integer not null default 2, -- Maximum 2 students allowed per room
     created_at timestamptz not null default now(),
     updated_at timestamptz not null default now(),
 
-    constraint rooms_capacity_check check (capacity > 0),
+    constraint rooms_capacity_check check (capacity > 0 and capacity <= 2),
     constraint rooms_unique_floor_room unique (floor_id, room_number)
 );
 

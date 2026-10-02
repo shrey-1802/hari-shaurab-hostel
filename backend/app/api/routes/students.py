@@ -37,6 +37,19 @@ async def list_students(
     return result
 
 
+@router.get("/rooms/occupancy")
+async def get_room_occupancies(
+    floor: Optional[int] = Query(None, description="Optional floor filter"),
+    current_user: CurrentUser = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Get live room occupancy data (max 2 capacity per room)."""
+    service = StudentService(db)
+    # If wing leader, force their assigned floor
+    target_floor = current_user.floor_number if current_user.floor_number is not None else floor
+    return await service.get_room_occupancies(target_floor)
+
+
 @router.get("/{student_id}")
 async def get_student(
     student_id: UUID,

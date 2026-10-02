@@ -33,22 +33,76 @@ export const StudentProvider = ({ children }) => {
     fetchStudents();
   }, [user]);
 
-  // Filter based on user role (Floor leader only sees their floor) and UI filters
+  // Helper to check if a room is in leader's assigned room range (e.g. 401-409)
+  const isRoomInScope = (room, start, end) => {
+    if (!start || !end || !room) return true;
+    const sDigits = parseInt(String(start).replace(/\D/g, ''), 10);
+    const eDigits = parseInt(String(end).replace(/\D/g, ''), 10);
+    const rDigits = parseInt(String(room).replace(/\D/g, ''), 10);
+    if (!isNaN(sDigits) && !isNaN(eDigits) && !isNaN(rDigits)) {
+      return rDigits >= sDigits && rDigits <= eDigits;
+    }
+    return String(room) >= String(start) && String(room) <= String(end);
+  };
+
+  // Check if current user has permission to view/edit a given student
+  const canAccessStudent = (student) => {
+    if (!user || !student) return false;
+    const role = (user.role || '').toUpperCase();
+    if (role === ROLES.MAIN_LEADER) return true;
+    const assignedFloor = user.assigned_floor || user.floor_number;
+    if (assignedFloor && student.floor_number !== assignedFloor) return false;
+    return isRoomInScope(student.room_number, user.room_start, user.room_end);
+  };
+
+  // Calculate live occupancy for a room (Max 2 capacity per room)
+  const getRoomOccupancy = (floor, room, excludeStudentId = null) => {
+    if (!room || !floor) {
+      return { count: 0, capacity: 2, isFull: false, availableSlots: 2, students: [] };
+    }
+    const roomStudents = students.filter((s) => {
+      if (excludeStudentId && s.id === excludeStudentId) return false;
+      return (
+        s.floor_number === Number(floor) &&
+        String(s.room_number).trim().toLowerCase() === String(room).trim().toLowerCase()
+      );
+    });
+    const count = roomStudents.length;
+    return {
+      count,
+      capacity: 2,
+      isFull: count >= 2,
+      availableSlots: Math.max(0, 2 - count),
+      students: roomStudents,
+    };
+  };
+
+  // Filter based on user role:
+  // - Main Leader: can see all students across all floors/wings
+  // - Wing Leader: ONLY sees students allocated to their assigned floor & room range
   const visibleStudents = useMemo(() => {
-    return students.filter(student => {
-      // Role-based floor restriction
-      if (user?.role === ROLES.WING_LEADER && user.assigned_floor) {
-        if (student.floor_number !== user.assigned_floor) return false;
+    const isMain = (user?.role || '').toUpperCase() === ROLES.MAIN_LEADER;
+    const assignedFloor = user?.assigned_floor || user?.floor_number;
+    const roomStart = user?.room_start;
+    const roomEnd = user?.room_end;
+
+    return students.filter((student) => {
+      // 1. Role-based scoping
+      if (!isMain) {
+        if (assignedFloor && student.floor_number !== assignedFloor) return false;
+        if (roomStart && roomEnd && !isRoomInScope(student.room_number, roomStart, roomEnd)) {
+          return false;
+        }
       } else if (selectedFloor !== 'ALL') {
         if (student.floor_number !== Number(selectedFloor)) return false;
       }
 
-      // Department filter
+      // 2. Department filter
       if (selectedDept !== 'ALL' && student.department !== selectedDept) {
         return false;
       }
 
-      // Search query
+      // 3. Search query
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase();
         const matchesName = student.full_name?.toLowerCase().includes(q);
@@ -56,7 +110,8 @@ export const StudentProvider = ({ children }) => {
         const matchesDept = student.department?.toLowerCase().includes(q);
         const matchesCollege = student.college_name?.toLowerCase().includes(q);
         const matchesMobile = student.student_mobile?.includes(q);
-        if (!matchesName && !matchesRoom && !matchesDept && !matchesCollege && !matchesMobile) {
+        const matchesCreator = student.creator_name?.toLowerCase().includes(q);
+        if (!matchesName && !matchesRoom && !matchesDept && !matchesCollege && !matchesMobile && !matchesCreator) {
           return false;
         }
       }
@@ -66,42 +121,45 @@ export const StudentProvider = ({ children }) => {
   }, [students, user, selectedFloor, selectedDept, searchQuery]);
 
   const addStudent = async (studentData) => {
-    const created = await studentService.create(studentData);
-    setStudents(prev => [created, ...prev]);
+    const created = await studentService.create(studentData, user);
+    setStudents((prev) => [created, ...prev]);
     return created;
   };
 
   const updateStudent = async (id, studentData) => {
     const updated = await studentService.update(id, studentData);
-    setStudents(prev => prev.map(s => s.id === id ? updated : s));
+    setStudents((prev) => prev.map((s) => (s.id === id ? updated : s)));
     return updated;
   };
 
   const deleteStudent = async (id) => {
     await studentService.delete(id);
-    setStudents(prev => prev.filter(s => s.id !== id));
+    setStudents((prev) => prev.filter((s) => s.id !== id));
   };
 
   // Metrics
   const stats = useMemo(() => {
-    const todayBirthdays = students.filter(s => isBirthdayToday(s.dob));
-    const weekBirthdays = students.filter(s => isBirthdayThisWeek(s.dob));
+    const isMain = (user?.role || '').toUpperCase() === ROLES.MAIN_LEADER;
+    const scopedList = isMain ? students : visibleStudents;
+
+    const todayBirthdays = scopedList.filter((s) => isBirthdayToday(s.dob));
+    const weekBirthdays = scopedList.filter((s) => isBirthdayThisWeek(s.dob));
     const floorCounts = { 4: 0, 6: 0 };
-    students.forEach(s => {
+    scopedList.forEach((s) => {
       if (floorCounts[s.floor_number] !== undefined) {
         floorCounts[s.floor_number]++;
       }
     });
 
     return {
-      totalStudents: students.length,
+      totalStudents: scopedList.length,
       todayBirthdaysCount: todayBirthdays.length,
       weekBirthdaysCount: weekBirthdays.length,
       floorCounts,
       todayBirthdays,
       weekBirthdays,
     };
-  }, [students]);
+  }, [students, visibleStudents, user]);
 
   return (
     <StudentContext.Provider
@@ -120,6 +178,9 @@ export const StudentProvider = ({ children }) => {
         updateStudent,
         deleteStudent,
         stats,
+        getRoomOccupancy,
+        canAccessStudent,
+        isRoomInScope,
       }}
     >
       {children}

@@ -17,10 +17,12 @@ import {
   Moon,
   Sparkles,
 } from 'lucide-react';
+import { usePageTitle } from '../../utils/usePageTitle';
 
 export const Settings = () => {
   const { user, isMainLeader } = useAuth();
   const { showToast } = useNotifications();
+  usePageTitle('Settings & Profile');
 
   const [notificationPreferences, setNotificationPreferences] = useState({
     birthdayAlerts: true,

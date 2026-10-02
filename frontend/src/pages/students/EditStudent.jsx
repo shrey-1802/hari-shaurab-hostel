@@ -12,17 +12,24 @@ import { ArrowLeft, Edit3, Upload, Users, Building2, GraduationCap, Phone } from
 export const EditStudent = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { students, updateStudent } = useStudents();
-  const { isMainLeader } = useAuth();
+  const { students, updateStudent, getRoomOccupancy, canAccessStudent, isRoomInScope } = useStudents();
+  const { user, isMainLeader } = useAuth();
   const { showToast } = useNotifications();
 
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState(null);
 
+  const roomStart = user?.room_start;
+  const roomEnd = user?.room_end;
+
   useEffect(() => {
     const student = students.find((s) => s.id === id);
     if (student) {
-      setFormData(student);
+      // Normalize: ensure dob is set (may come as date_of_birth from API)
+      setFormData({
+        ...student,
+        dob: student.dob || student.date_of_birth || '',
+      });
     }
   }, [id, students]);
 
@@ -33,6 +40,46 @@ export const EditStudent = () => {
       </Card>
     );
   }
+
+  // Access control guard for Wing Leaders
+  if (!isMainLeader && !canAccessStudent(formData)) {
+    return (
+      <Card className="text-center py-16 max-w-lg mx-auto">
+        <div className="w-12 h-12 rounded-full bg-red-100 text-red-600 flex items-center justify-center mx-auto mb-3">
+          <Building2 className="w-6 h-6" />
+        </div>
+        <h3 className="text-lg font-bold text-[#4A4A4A]">Access Restricted</h3>
+        <p className="text-xs text-gray-500 mt-2 mb-4">
+          You only have permission to manage students allocated to Floor {user?.assigned_floor || 4} in rooms {user?.room_start}–{user?.room_end}.
+        </p>
+        <Link to="/students">
+          <Button variant="primary" size="md">
+            Return to Directory
+          </Button>
+        </Link>
+      </Card>
+    );
+  }
+
+  // Calculate available room numbers for the active floor
+  const floorRoomList = () => {
+    const list = [];
+    const floor = Number(formData.floor_number);
+    const startNum = !isMainLeader && roomStart ? parseInt(roomStart.replace(/\D/g, ''), 10) : floor * 100 + 1;
+    const endNum = !isMainLeader && roomEnd ? parseInt(roomEnd.replace(/\D/g, ''), 10) : floor * 100 + 18;
+
+    for (let r = startNum; r <= endNum; r++) {
+      const roomStr = String(r);
+      const occ = getRoomOccupancy(floor, roomStr, formData.id);
+      list.push({
+        roomNumber: roomStr,
+        ...occ,
+      });
+    }
+    return list;
+  };
+
+  const selectedRoomOccupancy = getRoomOccupancy(formData.floor_number, formData.room_number, formData.id);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -52,17 +99,42 @@ export const EditStudent = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    // 1. Validate wing leader room range
+    if (!isMainLeader && roomStart && roomEnd) {
+      if (!isRoomInScope(formData.room_number, roomStart, roomEnd)) {
+        showToast(`Access denied: You are assigned to rooms ${roomStart}–${roomEnd} only.`, 'error');
+        return;
+      }
+    }
+
+    // 2. Validate max room capacity = 2 (excluding this student)
+    const occ = getRoomOccupancy(formData.floor_number, formData.room_number, formData.id);
+    if (occ.isFull) {
+      showToast(
+        `Room ${formData.room_number} is already at full capacity (2/2 students allocated). Please select another room.`,
+        'error'
+      );
+      return;
+    }
+
     setLoading(true);
     try {
-      await updateStudent(formData.id, formData);
+      const submitData = {
+        ...formData,
+        date_of_birth: formData.dob,
+      };
+      await updateStudent(formData.id, submitData);
       showToast(`${formData.full_name}'s profile updated!`, 'success');
       navigate(`/student/${formData.id}`);
     } catch (err) {
-      showToast('Error saving changes', 'error');
+      showToast(err.message || 'Error saving changes', 'error');
     } finally {
       setLoading(false);
     }
   };
+
+  const roomsList = floorRoomList();
 
   return (
     <div className="space-y-6 max-w-4xl mx-auto">
@@ -76,7 +148,7 @@ export const EditStudent = () => {
           Cancel & Return
         </Link>
         <span className="text-xs font-bold text-gold-600 bg-gold-50 px-3 py-1.5 rounded-full border border-gold-200">
-          Edit Mode
+          Edit Mode (Max 2 / Room)
         </span>
       </div>
 
@@ -151,7 +223,7 @@ export const EditStudent = () => {
           {/* Section 2 */}
           <div className="space-y-4">
             <h4 className="text-xs font-bold uppercase tracking-wider text-gold-700 flex items-center gap-2">
-              <Building2 className="w-4 h-4" /> 2. Room & Floor Allocation
+              <Building2 className="w-4 h-4" /> 2. Room & Floor Allocation (2 Students / Room)
             </h4>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
@@ -173,14 +245,63 @@ export const EditStudent = () => {
                 </select>
               </div>
 
-              <Input
-                label="Room Number *"
-                name="room_number"
-                value={formData.room_number}
-                onChange={handleChange}
-                required
-              />
+              <div>
+                <label className="block text-xs font-semibold text-[#4A4A4A] uppercase tracking-wider mb-2">
+                  Select Room (Occupancy Status) *
+                </label>
+                <select
+                  name="room_number"
+                  value={formData.room_number}
+                  onChange={handleChange}
+                  required
+                  className="w-full h-[52px] px-4 bg-white border border-[#DADADA] rounded-[14px] text-sm text-[#4A4A4A] focus:outline-none focus:border-gold-500 focus:ring-4 focus:ring-gold-100 font-medium"
+                >
+                  <option value="">-- Choose Assigned Room --</option>
+                  {roomsList.map((r) => (
+                    <option
+                      key={r.roomNumber}
+                      value={r.roomNumber}
+                      disabled={r.isFull}
+                      className={r.isFull ? 'text-gray-400 bg-gray-100' : 'text-gray-800'}
+                    >
+                      Room {r.roomNumber} — {r.occupied}/2 {r.isFull ? '(FULL - 2/2)' : `(${r.availableSlots} slot available)`}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
+
+            {/* Room Occupancy Indicator Banner */}
+            {selectedRoomOccupancy && (
+              <div
+                className={`p-3.5 rounded-2xl text-xs font-medium border flex items-center justify-between ${
+                  selectedRoomOccupancy.isFull
+                    ? 'bg-red-50 border-red-200 text-red-700'
+                    : selectedRoomOccupancy.count === 1
+                    ? 'bg-amber-50 border-amber-200 text-amber-800'
+                    : 'bg-green-50 border-green-200 text-green-800'
+                }`}
+              >
+                <div>
+                  <span className="font-bold">
+                    Room {formData.room_number} Status:{' '}
+                  </span>
+                  {selectedRoomOccupancy.isFull ? (
+                    <span>FULL (2 of 2 other students already allocated).</span>
+                  ) : selectedRoomOccupancy.count === 1 ? (
+                    <span>
+                      1 other student allocated. Roommate:{' '}
+                      <strong>{selectedRoomOccupancy.students[0]?.full_name}</strong>
+                    </span>
+                  ) : (
+                    <span>Current student is the sole resident or room is empty.</span>
+                  )}
+                </div>
+                <span className="font-black px-2.5 py-1 rounded-xl bg-white border shadow-sm">
+                  {selectedRoomOccupancy.count + 1} / 2 Total Slots
+                </span>
+              </div>
+            )}
           </div>
 
           {/* Section 3 */}

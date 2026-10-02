@@ -9,6 +9,7 @@ import { Badge } from '../../components/ui/Badge';
 import { Card } from '../../components/ui/Card';
 import { FLOORS, DEPARTMENTS, ROLES } from '../../utils/constants';
 import { formatDate } from '../../utils/helpers';
+import { usePageTitle } from '../../utils/usePageTitle';
 import {
   Search,
   Filter,
@@ -23,6 +24,7 @@ import {
 
 export const StudentList = () => {
   const { user, isMainLeader } = useAuth();
+  usePageTitle('Student Directory');
   const {
     visibleStudents,
     loading,
@@ -61,8 +63,8 @@ export const StudentList = () => {
           <h2 className="text-2xl sm:text-3xl font-extrabold text-[#4A4A4A]">Student Directory</h2>
           <p className="text-xs sm:text-sm text-gray-500 mt-1">
             {isMainLeader
-              ? `Showing ${visibleStudents.length} students across all hostel floors`
-              : `Showing ${visibleStudents.length} assigned students on Floor ${user?.assigned_floor}`}
+              ? `Showing all ${visibleStudents.length} students recorded across Floor 4 & Floor 6`
+              : `Showing ${visibleStudents.length} assigned students on Floor ${user?.assigned_floor || 4} (Rooms ${user?.room_start || '401'}–${user?.room_end || '409'})`}
           </p>
         </div>
 
@@ -84,7 +86,7 @@ export const StudentList = () => {
           {/* Search Box */}
           <div className="lg:col-span-5">
             <Input
-              placeholder="Search by student name, room 201-A, mobile..."
+              placeholder="Search by student name, room 201-A, mobile, leader..."
               icon={Search}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -110,7 +112,7 @@ export const StudentList = () => {
           ) : (
             <div className="lg:col-span-3">
               <div className="h-[52px] px-4 bg-gold-50 border border-gold-200 rounded-[14px] flex items-center text-xs font-bold text-gold-800">
-                🏢 Locked to Floor {user?.assigned_floor}
+                🏢 Floor {user?.assigned_floor || 4} (Rooms {user?.room_start}–{user?.room_end})
               </div>
             </div>
           )}
@@ -191,7 +193,7 @@ export const StudentList = () => {
         /* 4 Cards Per Row Grid (Desktop: 4, Tablet: 2, Mobile: 1) */
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 justify-items-center">
           {visibleStudents.map((student) => (
-            <StudentCard key={student.id} student={student} onDelete={deleteStudent} />
+            <StudentCard key={student.id} student={student} onDelete={deleteStudent} isMainLeader={isMainLeader} />
           ))}
         </div>
       ) : (
@@ -206,7 +208,7 @@ export const StudentList = () => {
                   <th className="pb-3">Department</th>
                   <th className="pb-3">DOB</th>
                   <th className="pb-3">Mobile</th>
-                  <th className="pb-3">Parent Name</th>
+                  {isMainLeader && <th className="pb-3">Filled By</th>}
                   <th className="pb-3 text-right">Actions</th>
                 </tr>
               </thead>
@@ -233,7 +235,13 @@ export const StudentList = () => {
                     <td className="py-3.5 text-xs text-gray-600 font-medium">{student.department}</td>
                     <td className="py-3.5 text-xs text-gray-600">{formatDate(student.dob)}</td>
                     <td className="py-3.5 text-xs text-gray-600">{student.student_mobile}</td>
-                    <td className="py-3.5 text-xs text-gray-600">{student.parent_name}</td>
+                    {isMainLeader && (
+                      <td className="py-3.5 text-xs font-semibold text-amber-900">
+                        <span className="bg-amber-50 px-2.5 py-1 rounded-lg border border-amber-200">
+                          {student.creator_name || 'Wing Leader'}
+                        </span>
+                      </td>
+                    )}
                     <td className="py-3.5 text-right">
                       <Link to={`/student/${student.id}`}>
                         <Button variant="primary" size="sm">

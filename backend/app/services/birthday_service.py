@@ -9,30 +9,59 @@ class BirthdayService:
         self.db = db
         self.student_repo = StudentRepository(db)
 
-    async def get_today(self, user_role: str, user_floor: Optional[int] = None) -> list:
+    async def get_today(
+        self,
+        user_role: str,
+        user_floor: Optional[int] = None,
+        room_start: Optional[str] = None,
+        room_end: Optional[str] = None,
+    ) -> list:
         """Get students whose birthday is today."""
         from app.core.enums import UserRole
         floor_restriction = user_floor if (user_role == UserRole.WING_LEADER.value or user_role == UserRole.WING_LEADER) else None
+        r_start = room_start if floor_restriction is not None else None
+        r_end = room_end if floor_restriction is not None else None
         today = date.today()
-        students = await self.student_repo.get_birthdays_today(today, floor_restriction)
+        students = await self.student_repo.get_birthdays_today(
+            today, floor_restriction=floor_restriction, room_start=r_start, room_end=r_end
+        )
         return [self._to_response(s, 0) for s in students]
 
-    async def get_tomorrow(self, user_role: str, user_floor: Optional[int] = None) -> list:
+    async def get_tomorrow(
+        self,
+        user_role: str,
+        user_floor: Optional[int] = None,
+        room_start: Optional[str] = None,
+        room_end: Optional[str] = None,
+    ) -> list:
         """Get students whose birthday is tomorrow."""
         from app.core.enums import UserRole
         floor_restriction = user_floor if (user_role == UserRole.WING_LEADER.value or user_role == UserRole.WING_LEADER) else None
+        r_start = room_start if floor_restriction is not None else None
+        r_end = room_end if floor_restriction is not None else None
         today = date.today()
-        students = await self.student_repo.get_birthdays_tomorrow(today, floor_restriction)
+        students = await self.student_repo.get_birthdays_tomorrow(
+            today, floor_restriction=floor_restriction, room_start=r_start, room_end=r_end
+        )
         return [self._to_response(s, 1) for s in students]
 
     async def get_upcoming(
-        self, days: int = 30, user_role: str = "MAIN_LEADER", user_floor: Optional[int] = None
+        self,
+        days: int = 30,
+        user_role: str = "MAIN_LEADER",
+        user_floor: Optional[int] = None,
+        room_start: Optional[str] = None,
+        room_end: Optional[str] = None,
     ) -> list:
         """Get students with birthdays in the next N days."""
         from app.core.enums import UserRole
         floor_restriction = user_floor if (user_role == UserRole.WING_LEADER.value or user_role == UserRole.WING_LEADER) else None
+        r_start = room_start if floor_restriction is not None else None
+        r_end = room_end if floor_restriction is not None else None
         today = date.today()
-        upcoming = await self.student_repo.get_upcoming_birthdays(today, days, floor_restriction)
+        upcoming = await self.student_repo.get_upcoming_birthdays(
+            today, days=days, floor_restriction=floor_restriction, room_start=r_start, room_end=r_end
+        )
         return [self._to_response(student, days_until) for student, days_until in upcoming]
 
     @staticmethod

@@ -61,7 +61,7 @@ class StudentService:
         room_end: Optional[str] = None,
         ip_address: Optional[str] = None,
     ) -> Student:
-        """Create a new student with floor and room range validation."""
+        """Create a new student with floor and room range validation and max 2 capacity check."""
         self._check_access(
             student_floor=data["floor_number"],
             student_room=data["room_number"],
@@ -75,6 +75,16 @@ class StudentService:
         existing = await self.repo.get_by_student_number(data["student_number"])
         if existing:
             raise ConflictError(f"Student number {data['student_number']} already exists")
+
+        # Check room capacity (maximum 2 students per room)
+        current_occupants = await self.repo.count_students_in_room(
+            floor_number=data["floor_number"],
+            room_number=data["room_number"],
+        )
+        if current_occupants >= 2:
+            raise ConflictError(
+                f"Room {data['room_number']} on Floor {data['floor_number']} is at full capacity (maximum 2 students allowed per room)."
+            )
 
         student = Student(**data, created_by=user_id)
         student = await self.repo.create(student)
@@ -126,7 +136,7 @@ class StudentService:
         room_end: Optional[str] = None,
         ip_address: Optional[str] = None,
     ) -> Student:
-        """Update a student, enforcing floor and room scope on current and new room/floor."""
+        """Update a student, enforcing floor and room scope on current and new room/floor and capacity <= 2."""
         student = await self.repo.get_by_id(student_id)
         if not student:
             raise NotFoundError("Student")
@@ -154,6 +164,17 @@ class StudentService:
                 room_end=room_end,
             )
 
+            # Check capacity in destination room
+            current_occupants = await self.repo.count_students_in_room(
+                floor_number=new_floor,
+                room_number=new_room,
+                exclude_student_id=student.id,
+            )
+            if current_occupants >= 2:
+                raise ConflictError(
+                    f"Room {new_room} on Floor {new_floor} is at full capacity (maximum 2 students allowed per room)."
+                )
+
         # Apply updates
         for key, value in data.items():
             if value is not None:
@@ -169,6 +190,10 @@ class StudentService:
         )
 
         return student
+
+    async def get_room_occupancies(self, floor_number: Optional[int] = None) -> dict:
+        """Get current room occupancies (max capacity 2 per room)."""
+        return await self.repo.get_room_occupancies(floor_number)
 
     async def delete_student(
         self,

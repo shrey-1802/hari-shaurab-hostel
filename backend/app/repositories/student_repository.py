@@ -35,6 +35,42 @@ class StudentRepository:
         await self.db.delete(student)
         await self.db.flush()
 
+    async def count_students_in_room(
+        self,
+        floor_number: int,
+        room_number: str,
+        exclude_student_id: Optional[UUID] = None,
+    ) -> int:
+        """Count the number of active students currently residing in a room (max 2 per room)."""
+        query = select(func.count()).select_from(Student).where(
+            Student.floor_number == floor_number,
+            Student.room_number == room_number,
+        )
+        if exclude_student_id is not None:
+            query = query.where(Student.id != exclude_student_id)
+        result = await self.db.execute(query)
+        return result.scalar() or 0
+
+    async def get_room_occupancies(self, floor_number: Optional[int] = None) -> dict:
+        """Get mapping of (floor_number, room_number) -> student count."""
+        query = select(Student.floor_number, Student.room_number, func.count()).group_by(
+            Student.floor_number, Student.room_number
+        )
+        if floor_number is not None:
+            query = query.where(Student.floor_number == floor_number)
+        result = await self.db.execute(query)
+        occupancies = {}
+        for floor, room, count in result.all():
+            occupancies[f"{floor}_{room}"] = {
+                "floor_number": floor,
+                "room_number": room,
+                "occupied": count,
+                "capacity": 2,
+                "is_full": count >= 2,
+                "available_slots": max(0, 2 - count),
+            }
+        return occupancies
+
     def _apply_scope_filters(
         self,
         query,

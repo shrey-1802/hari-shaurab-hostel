@@ -1,23 +1,32 @@
 import { apiClient, setToken, removeToken } from './api';
 
-const USERS_STORAGE_KEY = 'hs_registered_users_v6';
+const USERS_STORAGE_KEY = 'hs_registered_users_v7';
 
+// Public account metadata (no passwords exported)
 export const LEADER_ACCOUNTS = [
   {
     id: 'usr-main-01',
     email: 'priyankshah3690@gmail.com',
-    password: 'Priyank@0369',
     full_name: 'PriyankBhai',
     role: 'MAIN_LEADER',
     assigned_floor: null,
     room_start: null,
     room_end: null,
-    label: 'Main Leader (All Floors)',
+    label: 'Main Leader 1 (All Floors)',
+  },
+  {
+    id: 'usr-main-02',
+    email: 'shyamviththalani@gmail.com',
+    full_name: 'ShyamBhai',
+    role: 'MAIN_LEADER',
+    assigned_floor: null,
+    room_start: null,
+    room_end: null,
+    label: 'Main Leader 2 (All Floors)',
   },
   {
     id: 'usr-wing-4a',
     email: 'aryansinhc673@gmail.com',
-    password: 'Aryan@0369',
     full_name: 'AryanBhai (Floor 4: 401-409)',
     role: 'WING_LEADER',
     assigned_floor: 4,
@@ -28,7 +37,6 @@ export const LEADER_ACCOUNTS = [
   {
     id: 'usr-wing-4b',
     email: 'shreemadgandhi369@gmail.com',
-    password: 'Shreemad@0369',
     full_name: 'ShreemadBhai (Floor 4: 410-418)',
     role: 'WING_LEADER',
     assigned_floor: 4,
@@ -39,7 +47,6 @@ export const LEADER_ACCOUNTS = [
   {
     id: 'usr-wing-6a',
     email: 'jeetsinhsolanki749@gmail.com',
-    password: 'Jeet@0369',
     full_name: 'JeetBhai (Floor 6: 601-609)',
     role: 'WING_LEADER',
     assigned_floor: 6,
@@ -50,7 +57,6 @@ export const LEADER_ACCOUNTS = [
   {
     id: 'usr-wing-6b',
     email: 'patelparam2111@gmail.com',
-    password: 'Param@0369',
     full_name: 'ParamBhai (Floor 6: 610-618)',
     role: 'WING_LEADER',
     assigned_floor: 6,
@@ -60,9 +66,21 @@ export const LEADER_ACCOUNTS = [
   },
 ];
 
+// Internal-only: passwords for offline fallback login
+// NOT exported — these stay private within this module
+const FALLBACK_CREDENTIALS = [
+  { email: 'priyankshah3690@gmail.com', password: 'Priyank@0369' },
+  { email: 'shyamviththalani@gmail.com', password: 'Shyam@0369' },
+  { email: 'aryansinhc673@gmail.com', password: 'Aryan@0369' },
+  { email: 'shreemadgandhi369@gmail.com', password: 'Shreemad@0369' },
+  { email: 'jeetsinhsolanki749@gmail.com', password: 'Jeet@0369' },
+  { email: 'patelparam2111@gmail.com', password: 'Param@0369' },
+];
+
 const getStoredUsers = () => {
   const data = localStorage.getItem(USERS_STORAGE_KEY);
   if (!data) {
+    // Initialize with public account info (no passwords stored in localStorage)
     localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(LEADER_ACCOUNTS));
     return LEADER_ACCOUNTS;
   }
@@ -82,37 +100,26 @@ export const authService = {
       }
       return data;
     } catch {
-      // 2. Offline / local fallback
+      // 2. Offline / local fallback — check against private credentials
       const users = getStoredUsers();
       const user = users.find(
         (u) => u.email.toLowerCase() === email.toLowerCase().trim()
       );
 
       if (user) {
-        if (user.password && user.password !== password) {
+        // Verify password against private fallback credentials
+        const cred = FALLBACK_CREDENTIALS.find(
+          (c) => c.email.toLowerCase() === email.toLowerCase().trim()
+        );
+        if (cred && cred.password !== password) {
           throw new Error('Incorrect password. Please check your credentials.');
         }
         setToken(`jwt-token-${user.id}`);
         return { user, access_token: `jwt-token-${user.id}` };
       }
 
-      // If user is logging in with any new email, register them
-      const isMain = email.toLowerCase().includes('admin') || email.toLowerCase().includes('main');
-      const newUser = {
-        id: `usr-${Date.now()}`,
-        email: email.trim(),
-        password: password,
-        full_name: email.split('@')[0].replace('.', ' ').toUpperCase(),
-        role: isMain ? 'MAIN_LEADER' : 'WING_LEADER',
-        assigned_floor: isMain ? null : 4,
-        room_start: isMain ? null : '401',
-        room_end: isMain ? null : '409',
-      };
-
-      users.push(newUser);
-      localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(users));
-      setToken(`jwt-token-${newUser.id}`);
-      return { user: newUser, access_token: `jwt-token-${newUser.id}` };
+      // Unknown email — don't auto-register in offline mode
+      throw new Error('Account not found. Please contact your administrator or check your email.');
     }
   },
 

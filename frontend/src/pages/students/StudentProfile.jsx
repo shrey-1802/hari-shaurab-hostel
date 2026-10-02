@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useStudents } from '../../context/StudentContext';
+import { useAuth } from '../../context/AuthContext';
 import { useNotifications } from '../../context/NotificationContext';
 import { BirthdayProfileSection, WishOnWhatsAppButton } from '../../components/birthdays';
 import { Card } from '../../components/ui/Card';
@@ -8,26 +9,20 @@ import { Badge } from '../../components/ui/Badge';
 import { Button } from '../../components/ui/Button';
 import { Modal } from '../../components/ui/Modal';
 import { formatDate, calculateAge, isBirthdayToday, isBirthdayTomorrow } from '../../utils/helpers';
-import {
-  ArrowLeft,
-  Edit3,
-  Trash2,
-  Cake,
-  Phone,
-  Building2,
-  GraduationCap,
-  BookOpen,
-  Users,
-  Calendar,
-} from 'lucide-react';
+import { ArrowLeft, Edit3, Trash2, Cake, Phone, Building2, GraduationCap, BookOpen, Users, Calendar, UserCheck, ShieldCheck, Mail } from 'lucide-react';
+import { usePageTitle } from '../../utils/usePageTitle';
+import { getWhatsAppUrl } from '../../utils/helpers';
 
 export const StudentProfile = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { students, deleteStudent } = useStudents();
+  const { students, deleteStudent, canAccessStudent, getRoomOccupancy } = useStudents();
+  const { user, isMainLeader } = useAuth();
   const { showToast } = useNotifications();
   const [student, setStudent] = useState(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+
+  usePageTitle(student ? `${student.full_name} — Profile` : 'Student Profile');
 
   useEffect(() => {
     const found = students.find((s) => s.id === id);
@@ -50,8 +45,32 @@ export const StudentProfile = () => {
     );
   }
 
+  // Access control guard for Wing Leaders
+  if (!isMainLeader && !canAccessStudent(student)) {
+    return (
+      <Card className="text-center py-16 max-w-lg mx-auto">
+        <div className="w-12 h-12 rounded-full bg-red-100 text-red-600 flex items-center justify-center mx-auto mb-3">
+          <Building2 className="w-6 h-6" />
+        </div>
+        <h3 className="text-lg font-bold text-[#4A4A4A]">Access Restricted</h3>
+        <p className="text-xs text-gray-500 mt-2 mb-4">
+          This student is allocated to Floor {student.floor_number} (Room {student.room_number}), outside your assigned wing.
+        </p>
+        <Link to="/students">
+          <Button variant="primary" size="md">
+            Return to Directory
+          </Button>
+        </Link>
+      </Card>
+    );
+  }
+
   const isToday = isBirthdayToday(student.dob);
   const isTomorrow = isBirthdayTomorrow(student.dob);
+
+  // Roommates in the same room (Max 2 students)
+  const roomOccupancy = getRoomOccupancy(student.floor_number, student.room_number);
+  const roommate = roomOccupancy.students.find((s) => s.id !== student.id);
 
   const handleDelete = async () => {
     await deleteStudent(student.id);
@@ -96,7 +115,7 @@ export const StudentProfile = () => {
           <div className="relative">
             <div className="w-[120px] h-[120px] rounded-full p-1.5 bg-gradient-to-tr from-gold-400 to-amber-300 shadow-soft-md">
               <img
-                src={student.profile_image_url || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&auto=format&fit=crop&q=80'}
+                src={student.profile_image_url || student.profile_picture_url || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&auto=format&fit=crop&q=80'}
                 alt={student.full_name}
                 className="w-full h-full rounded-full object-cover"
               />
@@ -113,6 +132,9 @@ export const StudentProfile = () => {
               <h2 className="text-2xl sm:text-3xl font-extrabold text-[#4A4A4A]">{student.full_name}</h2>
               <Badge variant="gold" size="md">Floor {student.floor_number}</Badge>
               <Badge variant="gray" size="md">Room {student.room_number}</Badge>
+              <span className="px-2.5 py-1 rounded-xl bg-gray-100 text-gray-700 text-xs font-bold border border-gray-200">
+                Slot {roomOccupancy.students.findIndex((s) => s.id === student.id) + 1} of 2
+              </span>
               {isToday && <Badge variant="birthday" size="md">Birthday Today! 🎂</Badge>}
               {isTomorrow && (
                 <span className="px-3 py-1 rounded-xl bg-gold-100 text-gold-800 border border-gold-300 text-xs font-bold">
@@ -126,15 +148,26 @@ export const StudentProfile = () => {
               <span>{student.department} • {student.college_name}</span>
             </p>
 
-            <div className="flex flex-wrap items-center justify-center md:justify-start gap-4 pt-2 text-xs text-gray-600 font-semibold">
+            <div className="flex flex-wrap items-center justify-center md:justify-start gap-3 pt-2 text-xs text-gray-600 font-semibold">
               <span className="flex items-center gap-1.5 bg-gray-50 px-3 py-1.5 rounded-xl border">
                 <Calendar className="w-3.5 h-3.5 text-gold-600" />
                 DOB: {formatDate(student.dob)} ({calculateAge(student.dob)} yrs)
               </span>
-              <span className="flex items-center gap-1.5 bg-gray-50 px-3 py-1.5 rounded-xl border">
+              {/* Clickable phone number */}
+              <a
+                href={`tel:${student.student_mobile}`}
+                className="flex items-center gap-1.5 bg-gray-50 px-3 py-1.5 rounded-xl border hover:bg-gold-50 hover:border-gold-300 transition-colors"
+              >
                 <Phone className="w-3.5 h-3.5 text-gold-600" />
                 {student.student_mobile}
-              </span>
+              </a>
+              {/* Creator details visible to Main Leader */}
+              {isMainLeader && (
+                <span className="flex items-center gap-1.5 bg-amber-50 px-3 py-1.5 rounded-xl border border-amber-200 text-amber-900 font-bold">
+                  <UserCheck className="w-3.5 h-3.5 text-amber-600" />
+                  Filled by: {student.creator_name || 'Wing Leader'}
+                </span>
+              )}
             </div>
           </div>
 
@@ -151,6 +184,35 @@ export const StudentProfile = () => {
           </div>
         </div>
       </Card>
+
+      {/* Room Allocation & Roommate Card (Max 2 capacity) */}
+      <div className="p-4 rounded-2xl bg-white border border-gray-200 shadow-soft-sm flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-2xl bg-gold-50 text-gold-600 flex items-center justify-center border border-gold-200">
+            <Building2 className="w-5 h-5" />
+          </div>
+          <div>
+            <h4 className="text-sm font-bold text-[#4A4A4A]">
+              Room {student.room_number} (Floor {student.floor_number}) — Capacity: 2 Students
+            </h4>
+            <p className="text-xs text-gray-500">
+              {roommate ? (
+                <span>
+                  Co-resident Roommate:{' '}
+                  <Link to={`/student/${roommate.id}`} className="font-bold text-gold-700 hover:underline">
+                    {roommate.full_name} ({roommate.department})
+                  </Link>
+                </span>
+              ) : (
+                <span>Single resident in room (1 slot currently available).</span>
+              )}
+            </p>
+          </div>
+        </div>
+        <Badge variant={roomOccupancy.count === 2 ? 'gold' : 'gray'} size="md">
+          Occupancy: {roomOccupancy.count} / 2 {roomOccupancy.count === 2 ? '(FULL)' : '(1 Available)'}
+        </Badge>
+      </div>
 
       {/* Dedicated Birthday Information Section (Requested Feature) */}
       <BirthdayProfileSection student={student} />
@@ -175,11 +237,20 @@ export const StudentProfile = () => {
             </div>
             <div>
               <span className="text-gray-400 font-semibold block mb-0.5">Student Mobile</span>
-              <span className="text-[#4A4A4A] font-bold text-sm">{student.student_mobile}</span>
+              <a href={`tel:${student.student_mobile}`} className="text-[#4A4A4A] font-bold text-sm hover:text-gold-600 transition-colors">
+                {student.student_mobile}
+              </a>
             </div>
             <div>
               <span className="text-gray-400 font-semibold block mb-0.5">WhatsApp Mobile</span>
-              <span className="text-[#4A4A4A] font-bold text-sm">{student.whatsapp_number || student.student_mobile}</span>
+              <a
+                href={getWhatsAppUrl(student.whatsapp_number || student.student_mobile)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-[#4A4A4A] font-bold text-sm hover:text-green-600 transition-colors"
+              >
+                {student.whatsapp_number || student.student_mobile}
+              </a>
             </div>
             <div className="col-span-2">
               <span className="text-gray-400 font-semibold block mb-0.5">Hobbies & Interests</span>

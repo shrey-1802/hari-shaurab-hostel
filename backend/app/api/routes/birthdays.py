@@ -18,6 +18,8 @@ async def get_birthdays_today(
     result = await service.get_today(
         user_role=current_user.role.value,
         user_floor=current_user.floor_number,
+        room_start=current_user.room_start,
+        room_end=current_user.room_end,
     )
     return {"birthdays": result, "count": len(result)}
 
@@ -32,6 +34,8 @@ async def get_birthdays_tomorrow(
     result = await service.get_tomorrow(
         user_role=current_user.role.value,
         user_floor=current_user.floor_number,
+        room_start=current_user.room_start,
+        room_end=current_user.room_end,
     )
     return {"birthdays": result, "count": len(result)}
 
@@ -48,5 +52,7 @@ async def get_upcoming_birthdays(
         days=days,
         user_role=current_user.role.value,
         user_floor=current_user.floor_number,
+        room_start=current_user.room_start,
+        room_end=current_user.room_end,
     )
     return {"birthdays": result, "count": len(result)}

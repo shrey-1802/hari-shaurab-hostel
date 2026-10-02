@@ -52,8 +52,16 @@ class Student(Base):
     )
 
     # Relationships
-    creator = relationship("User", back_populates="created_students", foreign_keys=[created_by])
+    creator = relationship("User", back_populates="created_students", foreign_keys=[created_by], lazy="joined")
     birthday_logs = relationship("BirthdayLog", back_populates="student")
+
+    @property
+    def creator_name(self) -> str | None:
+        return self.creator.full_name if self.creator else None
+
+    @property
+    def creator_email(self) -> str | None:
+        return self.creator.email if self.creator else None
 
     def __repr__(self):
         return f"<Student id={self.id} name={self.full_name} floor={self.floor_number} room={self.room_number}>"
