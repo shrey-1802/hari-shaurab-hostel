@@ -1,91 +1,25 @@
 import { apiClient } from './api';
 
 const LOCAL_STORAGE_KEY = 'hs_students_data';
-const CLEAN_STORAGE_VERSION = 'hs_cleaned_v2';
-
-const INITIAL_SEED_STUDENTS = [
-  {
-    id: 'stu-shreemad-410',
-    full_name: 'Rahul Varma',
-    student_number: 'STU-2026-410',
-    dob: '2003-08-15',
-    date_of_birth: '2003-08-15',
-    student_mobile: '+91 98765 43210',
-    parent_name: 'Suresh Varma',
-    parent_mobile: '+91 98765 00001',
-    college_name: 'Hari-Saurabh Institute of Technology',
-    department: 'Computer Science & Engineering',
-    semester_result: '8.8 CPI',
-    hobby: 'Cricket, Coding',
-    hostel_friends: 'Amit Shah, Raj Patel',
-    non_hostel_friends: 'Karan Sharma',
-    floor_number: 4,
-    room_number: '410',
-    profile_image_url: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=300&auto=format&fit=crop&q=80',
-    profile_picture_url: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=300&auto=format&fit=crop&q=80',
-    created_by: 'usr-wing-4b',
-    creator_name: 'ShreemadBhai (Floor 4: 410-418)',
-    created_at: new Date().toISOString(),
-  },
-  {
-    id: 'stu-aryan-401',
-    full_name: 'Aarav Patel',
-    student_number: 'STU-2026-401',
-    dob: '2003-10-02',
-    date_of_birth: '2003-10-02',
-    student_mobile: '+91 98989 12345',
-    parent_name: 'Ramesh Patel',
-    parent_mobile: '+91 98989 00002',
-    college_name: 'Hari-Saurabh Institute of Technology',
-    department: 'Information Technology',
-    semester_result: '9.1 CPI',
-    hobby: 'Chess, Gaming',
-    hostel_friends: 'Rohan Mehta',
-    non_hostel_friends: 'Vikas Roy',
-    floor_number: 4,
-    room_number: '401',
-    profile_image_url: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300&auto=format&fit=crop&q=80',
-    profile_picture_url: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300&auto=format&fit=crop&q=80',
-    created_by: 'usr-wing-4a',
-    creator_name: 'AryanBhai (Floor 4: 401-409)',
-    created_at: new Date().toISOString(),
-  },
-  {
-    id: 'stu-jeet-601',
-    full_name: 'Devang Solanki',
-    student_number: 'STU-2026-601',
-    dob: '2003-05-20',
-    date_of_birth: '2003-05-20',
-    student_mobile: '+91 97234 56789',
-    parent_name: 'Vijay Solanki',
-    parent_mobile: '+91 97234 00003',
-    college_name: 'Hari-Saurabh Institute of Technology',
-    department: 'Mechanical Engineering',
-    semester_result: '8.4 CPI',
-    hobby: 'Music, Football',
-    hostel_friends: 'Jay Gandhi',
-    non_hostel_friends: 'Manish Dave',
-    floor_number: 6,
-    room_number: '601',
-    profile_image_url: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=300&auto=format&fit=crop&q=80',
-    profile_picture_url: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=300&auto=format&fit=crop&q=80',
-    created_by: 'usr-wing-6a',
-    creator_name: 'JeetBhai (Floor 6: 601-609)',
-    created_at: new Date().toISOString(),
-  },
-];
+const CLEAN_STORAGE_VERSION = 'hs_purge_demo_v3';
 
 const getLocalStudents = () => {
+  // Purge any previously stored demo data once to ensure 100% clean state
+  if (typeof window !== 'undefined' && !localStorage.getItem(CLEAN_STORAGE_VERSION)) {
+    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify([]));
+    localStorage.setItem(CLEAN_STORAGE_VERSION, 'true');
+    return [];
+  }
+
   const data = localStorage.getItem(LOCAL_STORAGE_KEY);
-  if (!data || JSON.parse(data || '[]').length === 0) {
-    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(INITIAL_SEED_STUDENTS));
-    return INITIAL_SEED_STUDENTS;
+  if (!data) {
+    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify([]));
+    return [];
   }
   try {
-    const list = JSON.parse(data);
-    return list.length > 0 ? list : INITIAL_SEED_STUDENTS;
+    return JSON.parse(data);
   } catch {
-    return INITIAL_SEED_STUDENTS;
+    return [];
   }
 };
 
