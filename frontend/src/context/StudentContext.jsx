@@ -32,16 +32,18 @@ export const StudentProvider = ({ children }) => {
   useEffect(() => {
     fetchStudents();
 
-    // Listen for storage updates across tabs & account switches
-    const handleStorageChange = () => {
+    // Listen for storage updates across tabs & window focus
+    const handleRefresh = () => {
       fetchStudents();
     };
-    window.addEventListener('storage', handleStorageChange);
-    window.addEventListener('student_data_changed', handleStorageChange);
+    window.addEventListener('storage', handleRefresh);
+    window.addEventListener('student_data_changed', handleRefresh);
+    window.addEventListener('focus', handleRefresh);
 
     return () => {
-      window.removeEventListener('storage', handleStorageChange);
-      window.removeEventListener('student_data_changed', handleStorageChange);
+      window.removeEventListener('storage', handleRefresh);
+      window.removeEventListener('student_data_changed', handleRefresh);
+      window.removeEventListener('focus', handleRefresh);
     };
   }, [user]);
 
