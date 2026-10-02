@@ -19,8 +19,11 @@ export const NotificationCenter = () => {
 
   // Filter students based on role for birthday alerts
   const relevantStudents = students.filter((s) => {
-    if (!isMainLeader && (user?.floor_number || user?.assigned_floor)) {
-      return s.floor_number === user.assigned_floor;
+    if (!isMainLeader) {
+      const assignedFloor = user?.assigned_floor ?? user?.floor_number;
+      if (assignedFloor !== null && assignedFloor !== undefined) {
+        return Number(s.floor_number) === Number(assignedFloor);
+      }
     }
     return true;
   });

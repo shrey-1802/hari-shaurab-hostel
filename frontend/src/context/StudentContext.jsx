@@ -31,6 +31,18 @@ export const StudentProvider = ({ children }) => {
 
   useEffect(() => {
     fetchStudents();
+
+    // Listen for storage updates across tabs & account switches
+    const handleStorageChange = () => {
+      fetchStudents();
+    };
+    window.addEventListener('storage', handleStorageChange);
+    window.addEventListener('student_data_changed', handleStorageChange);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('student_data_changed', handleStorageChange);
+    };
   }, [user]);
 
   // Helper to check if a room is in leader's assigned room range (e.g. 401-409)
@@ -49,9 +61,9 @@ export const StudentProvider = ({ children }) => {
   const canAccessStudent = (student) => {
     if (!user || !student) return false;
     const role = (user.role || '').toUpperCase();
-    if (role === ROLES.MAIN_LEADER) return true;
-    const assignedFloor = user.assigned_floor || user.floor_number;
-    if (assignedFloor && student.floor_number !== assignedFloor) return false;
+    if (role === ROLES.MAIN_LEADER || role === 'MAIN_LEADER') return true;
+    const assignedFloor = user.assigned_floor ?? user.floor_number;
+    if (assignedFloor !== null && assignedFloor !== undefined && Number(student.floor_number) !== Number(assignedFloor)) return false;
     return isRoomInScope(student.room_number, user.room_start, user.room_end);
   };
 
@@ -89,12 +101,12 @@ export const StudentProvider = ({ children }) => {
     return students.filter((student) => {
       // 1. Role-based scoping
       if (!isMain) {
-        if (assignedFloor && student.floor_number !== assignedFloor) return false;
+        if (assignedFloor !== null && assignedFloor !== undefined && Number(student.floor_number) !== Number(assignedFloor)) return false;
         if (roomStart && roomEnd && !isRoomInScope(student.room_number, roomStart, roomEnd)) {
           return false;
         }
       } else if (selectedFloor !== 'ALL') {
-        if (student.floor_number !== Number(selectedFloor)) return false;
+        if (Number(student.floor_number) !== Number(selectedFloor)) return false;
       }
 
       // 2. Department filter
