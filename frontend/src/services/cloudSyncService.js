@@ -1,14 +1,13 @@
 /**
  * Real-time Cloud Sync Service for Hari-Saurabh Hostel System
- * Connects directly to Supabase REST / Cloud Storage so student entries added
- * by any Wing Leader (e.g. ShreemadBhai) are instantly visible to Main Leaders (PriyankBhai/ShyamBhai)
- * across all devices and browsers.
+ * Connected directly to live Supabase PostgreSQL REST API
+ * (Project Ref: raytyqftzbutisuruylj)
  */
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || 'https://raytyqftzbutisuruylj.supabase.co';
-const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || 'sb_publishable_KpxO6r4SK4audx8tqVz9zw_Q5_9E-_w';
+const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJheXR5cWZ0emJ1dGlzdXJ1eWxqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA3NTc5NzksImV4cCI6MjEwNjMzMzk3OX0.w8jtteL7cll2n4BFr9mbcS9kyvp1tbX8ZPbrhEtbCGI';
 
-const CLOUD_CACHE_KEY = 'hs_students_cloud_cache_v4';
+const CLOUD_CACHE_KEY = 'hs_students_cloud_cache_v5';
 
 const getHeaders = () => ({
   'Content-Type': 'application/json',
@@ -19,7 +18,7 @@ const getHeaders = () => ({
 
 export const cloudSyncService = {
   /**
-   * Fetch all students from shared Cloud Database
+   * Fetch all students from Supabase Cloud Database
    */
   getAllStudents: async () => {
     try {
@@ -31,22 +30,20 @@ export const cloudSyncService = {
       if (response.ok) {
         const data = await response.json();
         if (Array.isArray(data)) {
-          // Cache in localStorage for fast initial render
           localStorage.setItem(CLOUD_CACHE_KEY, JSON.stringify(data));
           return data;
         }
       }
     } catch (error) {
-      console.warn('[CloudSync] Direct cloud fetch warning:', error?.message);
+      console.warn('[CloudSync] Supabase REST fetch warning:', error?.message);
     }
 
-    // Fallback to local cache if network is offline
     const cached = localStorage.getItem(CLOUD_CACHE_KEY);
     return cached ? JSON.parse(cached) : [];
   },
 
   /**
-   * Add a new student to shared Cloud Database
+   * Add a new student to Supabase Cloud Database
    */
   addStudent: async (student) => {
     const payload = {
@@ -65,6 +62,7 @@ export const cloudSyncService = {
       floor_number: Number(student.floor_number),
       room_number: String(student.room_number),
       profile_picture_url: student.profile_image_url || student.profile_picture_url || '',
+      creator_name: student.creator_name || 'Wing Leader',
     };
 
     try {
@@ -78,15 +76,17 @@ export const cloudSyncService = {
         const created = await response.json();
         const record = Array.isArray(created) ? created[0] : created;
         if (record) {
-          // Update local cache
           const existing = cloudSyncService.getCachedStudents();
           const updated = [record, ...existing.filter(s => s.id !== record.id)];
           localStorage.setItem(CLOUD_CACHE_KEY, JSON.stringify(updated));
           return record;
         }
+      } else {
+        const errDetail = await response.text().catch(() => '');
+        console.warn('[CloudSync] Supabase POST response not ok:', response.status, errDetail);
       }
     } catch (error) {
-      console.warn('[CloudSync] Direct cloud insert warning:', error?.message);
+      console.warn('[CloudSync] Supabase REST insert warning:', error?.message);
     }
 
     // Return student formatted with local cache fallback
@@ -95,7 +95,6 @@ export const cloudSyncService = {
       id: student.id || `stu-${Date.now()}`,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
-      creator_name: student.creator_name || 'Wing Leader',
     };
     const existing = cloudSyncService.getCachedStudents();
     const updated = [fallbackRecord, ...existing];
@@ -104,7 +103,7 @@ export const cloudSyncService = {
   },
 
   /**
-   * Update student in shared Cloud Database
+   * Update student in Supabase Cloud Database
    */
   updateStudent: async (id, student) => {
     const payload = {
@@ -142,7 +141,7 @@ export const cloudSyncService = {
         }
       }
     } catch (error) {
-      console.warn('[CloudSync] Direct cloud update warning:', error?.message);
+      console.warn('[CloudSync] Supabase REST update warning:', error?.message);
     }
 
     const existing = cloudSyncService.getCachedStudents();
@@ -152,7 +151,7 @@ export const cloudSyncService = {
   },
 
   /**
-   * Delete student from shared Cloud Database
+   * Delete student from Supabase Cloud Database
    */
   deleteStudent: async (id) => {
     try {
@@ -161,7 +160,7 @@ export const cloudSyncService = {
         headers: getHeaders(),
       });
     } catch (error) {
-      console.warn('[CloudSync] Direct cloud delete warning:', error?.message);
+      console.warn('[CloudSync] Supabase REST delete warning:', error?.message);
     }
 
     const existing = cloudSyncService.getCachedStudents();
