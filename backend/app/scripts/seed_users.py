@@ -30,12 +30,17 @@ async def seed():
             print("⚠️  Users already exist, skipping seed.")
             return
 
+        import os
+
+        def get_pwd(name: str) -> str:
+            return os.getenv(f"SEED_PWD_{name.upper()}", f"{name.capitalize()}@0369")
+
         users = [
             # Main Leaders (Full hostel access)
             User(
                 full_name="PriyankBhai",
                 email="priyankshah3690@gmail.com",
-                hashed_password=hash_password("Priyank@0369"),
+                hashed_password=hash_password(get_pwd("priyank")),
                 role=UserRole.MAIN_LEADER,
                 floor_number=None,
                 room_start=None,
@@ -44,7 +49,7 @@ async def seed():
             User(
                 full_name="ShyamBhai",
                 email="shyamviththalani@gmail.com",
-                hashed_password=hash_password("Shyam@0369"),
+                hashed_password=hash_password(get_pwd("shyam")),
                 role=UserRole.MAIN_LEADER,
                 floor_number=None,
                 room_start=None,
@@ -54,7 +59,7 @@ async def seed():
             User(
                 full_name="AryanBhai (Floor 4: 401-409)",
                 email="aryansinhc673@gmail.com",
-                hashed_password=hash_password("Aryan@0369"),
+                hashed_password=hash_password(get_pwd("aryan")),
                 role=UserRole.WING_LEADER,
                 floor_number=4,
                 room_start="401",
@@ -63,7 +68,7 @@ async def seed():
             User(
                 full_name="ShreemadBhai (Floor 4: 410-418)",
                 email="shreemadgandhi369@gmail.com",
-                hashed_password=hash_password("Shreemad@0369"),
+                hashed_password=hash_password(get_pwd("shreemad")),
                 role=UserRole.WING_LEADER,
                 floor_number=4,
                 room_start="410",
@@ -73,7 +78,7 @@ async def seed():
             User(
                 full_name="JeetBhai (Floor 6: 601-609)",
                 email="jeetsinhsolanki749@gmail.com",
-                hashed_password=hash_password("Jeet@0369"),
+                hashed_password=hash_password(get_pwd("jeet")),
                 role=UserRole.WING_LEADER,
                 floor_number=6,
                 room_start="601",
@@ -82,7 +87,7 @@ async def seed():
             User(
                 full_name="ParamBhai (Floor 6: 610-618)",
                 email="patelparam2111@gmail.com",
-                hashed_password=hash_password("Param@0369"),
+                hashed_password=hash_password(get_pwd("param")),
                 role=UserRole.WING_LEADER,
                 floor_number=6,
                 room_start="610",

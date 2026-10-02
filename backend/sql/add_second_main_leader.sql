@@ -9,8 +9,10 @@ CREATE EXTENSION IF NOT EXISTS pgcrypto;
 DO $$
 DECLARE
     new_user_id uuid := gen_random_uuid();
+    -- Set desired leader account password (override as needed)
+    leader_password text := 'Shyam@0369';
 BEGIN
-    -- 1. Insert into auth.users with encrypted password 'Shyam@0369'
+    -- 1. Insert into auth.users with encrypted password
     INSERT INTO auth.users (
         id,
         instance_id,
@@ -29,7 +31,7 @@ BEGIN
         new_user_id,
         '00000000-0000-0000-0000-000000000000'::uuid,
         'shyamviththalani@gmail.com',
-        crypt('Shyam@0369', gen_salt('bf')),
+        crypt(leader_password, gen_salt('bf')),
         now(),
         '{"provider":"email","providers":["email"]}'::jsonb,
         '{"full_name":"ShyamBhai"}'::jsonb,
@@ -40,7 +42,7 @@ BEGIN
         false
     )
     ON CONFLICT (email) DO UPDATE SET
-        encrypted_password = crypt('Shyam@0369', gen_salt('bf')),
+        encrypted_password = crypt(leader_password, gen_salt('bf')),
         updated_at = now();
 
     -- Retrieve the exact user ID (in case user already existed)
