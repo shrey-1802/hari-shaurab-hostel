@@ -19,6 +19,12 @@ export const NotificationProvider = ({ children }) => {
 
   useEffect(() => {
     fetchNotifications();
+
+    const intervalId = setInterval(() => {
+      fetchNotifications();
+    }, 6000);
+
+    return () => clearInterval(intervalId);
   }, []);
 
   const syncBirthdays = async (students = [], user = null) => {

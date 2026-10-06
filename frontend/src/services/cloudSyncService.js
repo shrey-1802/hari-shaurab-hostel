@@ -8,6 +8,7 @@ const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || 'https://raytyqftzbuti
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJheXR5cWZ0emJ1dGlzdXJ1eWxqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA3NTc5NzksImV4cCI6MjEwNjMzMzk3OX0.w8jtteL7cll2n4BFr9mbcS9kyvp1tbX8ZPbrhEtbCGI';
 
 const CLOUD_CACHE_KEY = 'hs_students_cloud_cache_v5';
+const NOTIFICATIONS_CACHE_KEY = 'hs_notifications_cloud_cache_v5';
 
 const getHeaders = () => ({
   'Content-Type': 'application/json',
@@ -173,4 +174,151 @@ export const cloudSyncService = {
     const data = localStorage.getItem(CLOUD_CACHE_KEY);
     return data ? JSON.parse(data) : [];
   },
+
+  // ============================================================
+  // NOTIFICATIONS CLOUD SYNC
+  // ============================================================
+  getAllNotifications: async () => {
+    try {
+      const response = await fetch(`${SUPABASE_URL}/rest/v1/notifications?select=*&order=created_at.desc`, {
+        method: 'GET',
+        headers: getHeaders(),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (Array.isArray(data)) {
+          localStorage.setItem(NOTIFICATIONS_CACHE_KEY, JSON.stringify(data));
+          return data;
+        }
+      }
+    } catch (error) {
+      console.warn('[CloudSync] Supabase notifications REST fetch warning:', error?.message);
+    }
+
+    const cached = localStorage.getItem(NOTIFICATIONS_CACHE_KEY);
+    return cached ? JSON.parse(cached) : [];
+  },
+
+  addNotification: async (notif) => {
+    const payload = {
+      title: notif.title,
+      message: notif.message,
+      notification_type: notif.notification_type || 'SYSTEM_ALERT',
+      timing_type: notif.timing_type || null,
+      dedupe_key: notif.dedupe_key || null,
+      student_id: notif.student_id ? String(notif.student_id) : null,
+      student_name: notif.student_name || null,
+      student_avatar: notif.student_avatar || null,
+      student_phone: notif.student_phone || null,
+      room_number: notif.room_number ? String(notif.room_number) : null,
+      floor_number: notif.floor_number ? Number(notif.floor_number) : null,
+      dob: notif.dob || null,
+      is_read: false,
+    };
+
+    try {
+      const response = await fetch(`${SUPABASE_URL}/rest/v1/notifications`, {
+        method: 'POST',
+        headers: getHeaders(),
+        body: JSON.stringify(payload),
+      });
+
+      if (response.ok) {
+        const created = await response.json();
+        const record = Array.isArray(created) ? created[0] : created;
+        if (record) {
+          const existing = cloudSyncService.getCachedNotifications();
+          const updated = [record, ...existing.filter(n => n.id !== record.id)];
+          localStorage.setItem(NOTIFICATIONS_CACHE_KEY, JSON.stringify(updated));
+          return record;
+        }
+      }
+    } catch (error) {
+      console.warn('[CloudSync] Supabase notification insert warning:', error?.message);
+    }
+
+    const fallbackRecord = {
+      ...payload,
+      id: notif.id || `notif-${Date.now()}`,
+      created_at: new Date().toISOString(),
+    };
+    const existing = cloudSyncService.getCachedNotifications();
+    const updated = [fallbackRecord, ...existing];
+    localStorage.setItem(NOTIFICATIONS_CACHE_KEY, JSON.stringify(updated));
+    return fallbackRecord;
+  },
+
+  markNotificationRead: async (id) => {
+    try {
+      await fetch(`${SUPABASE_URL}/rest/v1/notifications?id=eq.${id}`, {
+        method: 'PATCH',
+        headers: getHeaders(),
+        body: JSON.stringify({ is_read: true }),
+      });
+    } catch (error) {
+      console.warn('[CloudSync] Supabase notification read update warning:', error?.message);
+    }
+    const existing = cloudSyncService.getCachedNotifications();
+    const updated = existing.map(n => n.id === id ? { ...n, is_read: true } : n);
+    localStorage.setItem(NOTIFICATIONS_CACHE_KEY, JSON.stringify(updated));
+  },
+
+  markAllNotificationsRead: async () => {
+    try {
+      await fetch(`${SUPABASE_URL}/rest/v1/notifications?is_read=eq.false`, {
+        method: 'PATCH',
+        headers: getHeaders(),
+        body: JSON.stringify({ is_read: true }),
+      });
+    } catch (error) {
+      console.warn('[CloudSync] Supabase notification mark all read warning:', error?.message);
+    }
+    const existing = cloudSyncService.getCachedNotifications();
+    const updated = existing.map(n => ({ ...n, is_read: true }));
+    localStorage.setItem(NOTIFICATIONS_CACHE_KEY, JSON.stringify(updated));
+  },
+
+  clearAllNotifications: async () => {
+    try {
+      await fetch(`${SUPABASE_URL}/rest/v1/notifications?id=neq.0`, {
+        method: 'DELETE',
+        headers: getHeaders(),
+      });
+    } catch (error) {
+      console.warn('[CloudSync] Supabase notification clear warning:', error?.message);
+    }
+    localStorage.setItem(NOTIFICATIONS_CACHE_KEY, JSON.stringify([]));
+  },
+
+  getCachedNotifications: () => {
+    const data = localStorage.getItem(NOTIFICATIONS_CACHE_KEY);
+    return data ? JSON.parse(data) : [];
+  },
+
+  // ============================================================
+  // PUSH SUBSCRIPTIONS CLOUD SYNC
+  // ============================================================
+  savePushSubscription: async (email, subscription) => {
+    if (!subscription || !subscription.endpoint) return;
+    const payload = {
+      email: email || 'leader@hostel.com',
+      endpoint: subscription.endpoint,
+      p256dh_key: subscription.keys?.p256dh || '',
+      auth_key: subscription.keys?.auth || '',
+      user_agent: typeof navigator !== 'undefined' ? navigator.userAgent : '',
+      is_active: true,
+    };
+
+    try {
+      await fetch(`${SUPABASE_URL}/rest/v1/push_subscriptions`, {
+        method: 'POST',
+        headers: getHeaders(),
+        body: JSON.stringify(payload),
+      });
+    } catch (err) {
+      console.warn('[CloudSync] Save push subscription warning:', err?.message);
+    }
+  },
 };
+

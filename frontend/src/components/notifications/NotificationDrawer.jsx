@@ -46,7 +46,7 @@ export const NotificationDrawer = ({ isOpen, onClose }) => {
 
   const handleEnablePush = async () => {
     setIsRequestingPermission(true);
-    const result = await pushNotificationService.requestPermission();
+    const result = await pushNotificationService.requestPermission(user?.email);
     setPermissionState(pushNotificationService.getPermissionState());
     setIsRequestingPermission(false);
 

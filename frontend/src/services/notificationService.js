@@ -1,6 +1,7 @@
 import { apiClient } from './api';
-import { isBirthdayToday, isBirthdayTomorrow, formatBirthdayDateOnly } from '../utils/helpers';
+import { isBirthdayToday, isBirthdayTomorrow } from '../utils/helpers';
 import { pushNotificationService } from './pushNotificationService';
+import { cloudSyncService } from './cloudSyncService';
 
 const NOTIFICATIONS_STORAGE_KEY = 'hs_notifications';
 
@@ -16,35 +17,39 @@ const saveStoredNotifications = (notifications) => {
 export const notificationService = {
   getNotifications: async () => {
     try {
-      return await apiClient('/notifications');
-    } catch {
-      return getStoredNotifications();
+      const data = await apiClient('/notifications');
+      if (Array.isArray(data) && data.length > 0) return data;
+    } catch (err) {
+      console.warn('[NotificationService] FastAPI warning, fetching from Supabase cloud database:', err?.message);
     }
+    const cloudNotifs = await cloudSyncService.getAllNotifications();
+    if (Array.isArray(cloudNotifs) && cloudNotifs.length > 0) {
+      saveStoredNotifications(cloudNotifs);
+      return cloudNotifs;
+    }
+    return getStoredNotifications();
   },
 
   createNotification: async (notificationData) => {
+    let newNotif = null;
     try {
-      return await apiClient('/notifications', {
+      newNotif = await apiClient('/notifications', {
         method: 'POST',
         body: JSON.stringify(notificationData),
       });
     } catch {
-      const list = getStoredNotifications();
-      const newNotif = {
-        id: `notif-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
-        title: notificationData.title,
-        message: notificationData.message,
-        notification_type: notificationData.notification_type || 'SYSTEM_ALERT',
-        student_id: notificationData.student_id || null,
-        floor_number: notificationData.floor_number || null,
-        is_read: false,
-        created_at: new Date().toISOString(),
-        ...notificationData,
-      };
-      list.unshift(newNotif);
-      saveStoredNotifications(list);
-      return newNotif;
+      // Sync to Supabase Online Database
+      newNotif = await cloudSyncService.addNotification(notificationData);
     }
+
+    if (!newNotif) {
+      newNotif = await cloudSyncService.addNotification(notificationData);
+    }
+
+    const list = getStoredNotifications();
+    const updated = [newNotif, ...list.filter(n => n.id !== newNotif.id)];
+    saveStoredNotifications(updated);
+    return newNotif;
   },
 
   /**
@@ -53,13 +58,13 @@ export const notificationService = {
    */
   syncBirthdayNotifications: async (students = [], user = null) => {
     const todayStr = new Date().toISOString().split('T')[0];
-    const existing = getStoredNotifications();
+    const existing = await notificationService.getNotifications();
     const createdNotifications = [];
 
     // Filter relevant students based on leader role
     const scopedStudents = students.filter((s) => {
       if (user?.role === 'WING_LEADER' && user.assigned_floor) {
-        return s.floor_number === user.assigned_floor;
+        return Number(s.floor_number) === Number(user.assigned_floor);
       }
       return true;
     });
@@ -89,7 +94,7 @@ export const notificationService = {
             dedupe_key: dedupeId,
             student_id: student.id,
             student_name: student.full_name,
-            student_avatar: student.profile_image_url,
+            student_avatar: student.profile_image_url || student.profile_picture_url,
             student_phone: student.whatsapp_number || student.student_mobile,
             room_number: student.room_number,
             floor_number: student.floor_number,
@@ -113,33 +118,37 @@ export const notificationService = {
 
   markAsRead: async (id) => {
     try {
-      return await apiClient(`/notifications/${id}/read`, { method: 'PUT' });
+      await apiClient(`/notifications/${id}/read`, { method: 'PUT' });
     } catch {
-      const stored = getStoredNotifications();
-      const updated = stored.map(n => n.id === id ? { ...n, is_read: true } : n);
-      saveStoredNotifications(updated);
-      return { success: true };
+      await cloudSyncService.markNotificationRead(id);
     }
+    const stored = getStoredNotifications();
+    const updated = stored.map(n => n.id === id ? { ...n, is_read: true } : n);
+    saveStoredNotifications(updated);
+    return { success: true };
   },
 
   markAllAsRead: async () => {
     try {
-      return await apiClient('/notifications/read-all', { method: 'PUT' });
+      await apiClient('/notifications/read-all', { method: 'PUT' });
     } catch {
-      const stored = getStoredNotifications();
-      const updated = stored.map(n => ({ ...n, is_read: true }));
-      saveStoredNotifications(updated);
-      return { success: true };
+      await cloudSyncService.markAllNotificationsRead();
     }
+    const stored = getStoredNotifications();
+    const updated = stored.map(n => ({ ...n, is_read: true }));
+    saveStoredNotifications(updated);
+    return { success: true };
   },
 
   clearAll: async () => {
     try {
-      return await apiClient('/notifications/clear-all', { method: 'DELETE' });
+      await apiClient('/notifications/clear-all', { method: 'DELETE' });
     } catch {
-      saveStoredNotifications([]);
-      return { success: true };
+      await cloudSyncService.clearAllNotifications();
     }
+    saveStoredNotifications([]);
+    return { success: true };
   },
 };
+
 

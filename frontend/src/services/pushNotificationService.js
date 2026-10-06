@@ -1,16 +1,26 @@
 import { cleanWhatsAppNumber } from '../utils/helpers';
+import { cloudSyncService } from './cloudSyncService';
+
+function urlBase64ToUint8Array(base64String) {
+  const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
+  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+  const rawData = window.atob(base64);
+  const outputArray = new Uint8Array(rawData.length);
+  for (let i = 0; i < rawData.length; ++i) {
+    outputArray[i] = rawData.charCodeAt(i);
+  }
+  return outputArray;
+}
 
 /**
  * PushNotificationService
  * 
  * Manages Browser Push Notifications via Service Worker & Notification API:
  * - Service Worker registration & lifecycle
+ * - VAPID Web Push subscription registration to Supabase database
  * - Notification permission request & state tracking
  * - Dispatches rich push notifications for Approaching Birthdays (Tomorrow & Today)
  * - Click redirection to Student Profile (/student/{id}) or WhatsApp (https://wa.me/{phone})
- * - Deduplication tracking so notifications are sent cleanly once per calendar day
- * 
- * Strict Policy: No automated WhatsApp messaging, no Twilio, no Meta WhatsApp API.
  */
 class PushNotificationService {
   constructor() {
@@ -36,13 +46,16 @@ class PushNotificationService {
     return Notification.permission; // 'default' | 'granted' | 'denied'
   }
 
-  async requestPermission() {
+  async requestPermission(userEmail = '') {
     if (!this.isSupported) {
       return { success: false, status: 'unsupported', message: 'Browser does not support notifications' };
     }
 
     try {
       const permission = await Notification.requestPermission();
+      if (permission === 'granted') {
+        await this.subscribeUser(userEmail);
+      }
       return {
         success: permission === 'granted',
         status: permission,
@@ -52,6 +65,28 @@ class PushNotificationService {
       console.error('Error requesting notification permission:', err);
       return { success: false, status: 'error', error: err.message };
     }
+  }
+
+  async subscribeUser(userEmail = '') {
+    if (!this.isSupported || !this.swRegistration) return null;
+    const vapidKey = import.meta.env.VITE_VAPID_PUBLIC_KEY || 'BJxWdLKAC1vVLJ7vIf1irjJhic9hsdwLqFIHLOvXoRrvzLRkzk-KIieYwHs1g95aOS5a79Pg8FR1KFnHBd5FSCg';
+    try {
+      const convertedKey = urlBase64ToUint8Array(vapidKey);
+      let subscription = await this.swRegistration.pushManager.getSubscription();
+      if (!subscription) {
+        subscription = await this.swRegistration.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: convertedKey,
+        });
+      }
+      if (subscription) {
+        await cloudSyncService.savePushSubscription(userEmail, subscription.toJSON());
+        return subscription;
+      }
+    } catch (err) {
+      console.warn('Failed to subscribe to Web Push:', err?.message);
+    }
+    return null;
   }
 
   /**

@@ -32,6 +32,12 @@ export const StudentProvider = ({ children }) => {
   useEffect(() => {
     fetchStudents();
 
+    // 5-second live cloud sync interval: Ensures Wing Leader changes automatically
+    // reflect to Main Leader and Main Leader changes reflect to Wing Leaders in real-time
+    const syncInterval = setInterval(() => {
+      fetchStudents();
+    }, 5000);
+
     // Listen for storage updates across tabs & window focus
     const handleRefresh = () => {
       fetchStudents();
@@ -41,6 +47,7 @@ export const StudentProvider = ({ children }) => {
     window.addEventListener('focus', handleRefresh);
 
     return () => {
+      clearInterval(syncInterval);
       window.removeEventListener('storage', handleRefresh);
       window.removeEventListener('student_data_changed', handleRefresh);
       window.removeEventListener('focus', handleRefresh);
