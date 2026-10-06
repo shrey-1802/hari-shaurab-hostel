@@ -6,14 +6,38 @@ export const formatDate = (dateString) => {
   if (!dateString) return 'N/A';
   try {
     const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
+    return date.toLocaleDateString('en-GB', {
+      day: '2-digit',
+      month: '2-digit',
       year: 'numeric',
-      month: 'short',
-      day: 'numeric',
     });
   } catch {
     return dateString;
   }
+};
+
+export const formatDateDDMMYYYY = (dateString) => {
+  if (!dateString) return 'N/A';
+  try {
+    const d = new Date(dateString);
+    if (isNaN(d.getTime())) return dateString;
+    const day = String(d.getDate()).padStart(2, '0');
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const year = d.getFullYear();
+    return `${day}/${month}/${year}`;
+  } catch {
+    return dateString;
+  }
+};
+
+export const validateDOBNotFuture = (dobString) => {
+  if (!dobString) return 'Date of birth is compulsory.';
+  const dob = new Date(dobString);
+  const now = new Date();
+  if (dob >= now || dob.getFullYear() > now.getFullYear()) {
+    return 'Date of birth cannot be in the future or exceed current year.';
+  }
+  return null;
 };
 
 export const formatBirthdayDateOnly = (dateString) => {

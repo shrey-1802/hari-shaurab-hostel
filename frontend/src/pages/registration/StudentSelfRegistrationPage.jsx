@@ -94,6 +94,22 @@ export const StudentSelfRegistrationPage = () => {
       return;
     }
 
+    if (!formData.date_of_birth) {
+      alert('Date of Birth is compulsory.');
+      return;
+    }
+    const dobDate = new Date(formData.date_of_birth);
+    const currentYear = new Date().getFullYear();
+    if (dobDate >= new Date() || dobDate.getFullYear() > currentYear) {
+      alert('Date of Birth cannot be in the future or exceed current year.');
+      return;
+    }
+
+    if (!formData.student_mobile || !formData.student_mobile.trim()) {
+      alert('WhatsApp Number is compulsory.');
+      return;
+    }
+
     setSubmitting(true);
     try {
       await registrationService.submitSelfRegistration(token, formData);
@@ -347,10 +363,11 @@ export const StudentSelfRegistrationPage = () => {
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-300">Date Of Birth *</label>
+                <label className="text-xs font-bold text-slate-300">Date Of Birth * (Format: DD/MM/YYYY)</label>
                 <input
                   type="date"
                   name="date_of_birth"
+                  max={new Date().toISOString().split('T')[0]}
                   value={formData.date_of_birth}
                   onChange={handleChange}
                   required
@@ -372,7 +389,7 @@ export const StudentSelfRegistrationPage = () => {
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-300">Student Mobile Number *</label>
+                <label className="text-xs font-bold text-slate-300">WhatsApp Number * (Compulsory)</label>
                 <input
                   type="tel"
                   name="student_mobile"

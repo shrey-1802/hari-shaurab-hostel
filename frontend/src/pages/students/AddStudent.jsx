@@ -20,6 +20,8 @@ import {
   X,
 } from 'lucide-react';
 
+import { ShareRegistrationLinkCard } from '../../components/registration/ShareRegistrationLinkCard';
+
 export const AddStudent = () => {
   const navigate = useNavigate();
   const { addStudent, getRoomOccupancy, isRoomInScope } = useStudents();
@@ -47,7 +49,6 @@ export const AddStudent = () => {
     non_hostel_friends: '',
     floor_number: assignedFloor,
     room_number: roomStart || '',
-    whatsapp_number: '',
     profile_image_url: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=300&auto=format&fit=crop&q=80',
   });
 
@@ -93,7 +94,25 @@ export const AddStudent = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // 1. Validate wing leader room range
+    // 1. Validate Date of Birth (compulsory & not > current year)
+    if (!formData.dob) {
+      showToast('Date of Birth is compulsory.', 'error');
+      return;
+    }
+    const dobDate = new Date(formData.dob);
+    const currentYear = new Date().getFullYear();
+    if (dobDate >= new Date() || dobDate.getFullYear() > currentYear) {
+      showToast('Date of Birth cannot be in the future or exceed current year.', 'error');
+      return;
+    }
+
+    // 2. Validate WhatsApp Number (compulsory)
+    if (!formData.student_mobile || !formData.student_mobile.trim()) {
+      showToast('WhatsApp Number is compulsory for student registration.', 'error');
+      return;
+    }
+
+    // 3. Validate wing leader room range
     if (!isMainLeader && roomStart && roomEnd) {
       if (!isRoomInScope(formData.room_number, roomStart, roomEnd)) {
         showToast(`Access denied: You are assigned to rooms ${roomStart}–${roomEnd} only.`, 'error');
@@ -101,7 +120,7 @@ export const AddStudent = () => {
       }
     }
 
-    // 2. Validate max room capacity = 2
+    // 4. Validate max room capacity = 2
     const occ = getRoomOccupancy(formData.floor_number, formData.room_number);
     if (occ.isFull) {
       showToast(
@@ -111,7 +130,7 @@ export const AddStudent = () => {
       return;
     }
 
-    // 3. Validate student number
+    // 5. Validate student number
     if (!formData.student_number.trim()) {
       showToast('Student Number / Enrollment ID is required.', 'error');
       return;
@@ -119,10 +138,10 @@ export const AddStudent = () => {
 
     setLoading(true);
     try {
-      // Map dob to date_of_birth for the API
       const submitData = {
         ...formData,
         date_of_birth: formData.dob,
+        whatsapp_number: formData.student_mobile,
       };
       const created = await addStudent(submitData);
       showToast(`${formData.full_name} registered successfully in Room ${formData.room_number}!`, 'success');
@@ -156,15 +175,19 @@ export const AddStudent = () => {
         </div>
       </div>
 
+      {/* Option 1: Share Registration Link with Student */}
+      <ShareRegistrationLinkCard />
+
+      {/* Option 2: Register Student Manually */}
       <Card>
         <div className="flex items-center gap-3 pb-4 mb-6 border-b border-gray-100">
           <div className="w-10 h-10 rounded-2xl bg-gold-50 text-gold-600 flex items-center justify-center">
             <UserPlus className="w-5 h-5" />
           </div>
           <div>
-            <h2 className="text-xl font-extrabold text-[#4A4A4A]">Register New Resident</h2>
+            <h2 className="text-xl font-extrabold text-[#4A4A4A]">Option 2: Register Resident Profile Manually</h2>
             <p className="text-xs text-gray-500">
-              Add student profile with strict room allocation (2 students per room capacity)
+              Direct manual student profile entry with strict room allocation (2 students per room capacity)
             </p>
           </div>
         </div>
@@ -211,27 +234,21 @@ export const AddStudent = () => {
                 required
               />
               <Input
-                label="Date of Birth *"
+                label="Date of Birth * (Format: DD/MM/YYYY)"
                 name="dob"
                 type="date"
+                max={new Date().toISOString().split('T')[0]}
                 value={formData.dob}
                 onChange={handleChange}
                 required
               />
               <Input
-                label="Student Mobile Number *"
+                label="WhatsApp Number * (Compulsory)"
                 name="student_mobile"
                 value={formData.student_mobile}
                 onChange={handleChange}
-                placeholder="+91 98765 00000"
+                placeholder="+91 98765 43210"
                 required
-              />
-              <Input
-                label="WhatsApp Number"
-                name="whatsapp_number"
-                value={formData.whatsapp_number}
-                onChange={handleChange}
-                placeholder="+91 98765 00000"
               />
             </div>
           </div>
