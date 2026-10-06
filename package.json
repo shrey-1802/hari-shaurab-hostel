@@ -2,10 +2,15 @@
   "name": "hari-saurabh-hostel",
   "version": "1.0.0",
   "private": true,
+  "workspaces": [
+    "frontend"
+  ],
   "scripts": {
-    "postinstall": "npm --prefix frontend install",
-    "build": "npm --prefix frontend install && npm --prefix frontend run build",
+    "build": "cd frontend && npm install --include=dev && npm run build",
     "dev": "npm --prefix frontend run dev",
     "preview": "npm --prefix frontend run preview"
+  },
+  "engines": {
+    "node": ">=18.0.0"
   }
 }
