@@ -23,19 +23,37 @@ const saveLocalStudents = (students) => {
 /**
  * Normalize a student record from backend API or Supabase to frontend field names.
  */
-const normalizeStudent = (s) => ({
-  ...s,
-  id: s.id || `stu-${Date.now()}`,
-  dob: s.dob || s.date_of_birth || '',
-  date_of_birth: s.date_of_birth || s.dob || '',
-  student_number: s.student_number || `STU-${s.id}`,
-  student_mobile: s.student_mobile || '',
-  floor_number: Number(s.floor_number),
-  room_number: String(s.room_number),
-  profile_image_url: s.profile_image_url || s.profile_picture_url || '',
-  profile_picture_url: s.profile_picture_url || s.profile_image_url || '',
-  creator_name: s.creator_name || (s.created_by ? 'Wing Leader' : 'Wing Leader'),
-});
+const normalizeStudent = (s) => {
+  let extra = {};
+  if (s.address && typeof s.address === 'string' && s.address.startsWith('{')) {
+    try {
+      extra = JSON.parse(s.address);
+    } catch {}
+  }
+  return {
+    ...s,
+    ...extra,
+    id: s.id || `stu-${Date.now()}`,
+    dob: s.dob || s.date_of_birth || '',
+    date_of_birth: s.date_of_birth || s.dob || '',
+    student_number: s.student_number || `STU-${s.id}`,
+    student_mobile: s.student_mobile || s.mobile || '',
+    floor_number: Number(s.floor_number),
+    room_number: String(s.room_number),
+    profile_image_url: s.profile_image_url || s.profile_picture_url || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+    profile_picture_url: s.profile_picture_url || s.profile_image_url || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+    creator_name: s.creator_name || 'Wing Leader',
+    college_name: extra.college_name || s.college_name || 'Hari-Saurabh Institute of Technology',
+    department: extra.department || s.department || 'General',
+    parent_name: extra.parent_name || s.parent_name || '',
+    parent_mobile: extra.parent_mobile || s.parent_mobile || '',
+    semester_result: extra.semester_result || s.semester_result || '',
+    hobby: extra.hobby || s.hobby || '',
+    hostel_friends: extra.hostel_friends || s.hostel_friends || '',
+    non_hostel_friends: extra.non_hostel_friends || s.non_hostel_friends || '',
+    registration_status: extra.registration_status || s.registration_status || 'APPROVED',
+  };
+};
 
 /**
  * Map frontend form data to backend API field names.
@@ -59,10 +77,20 @@ const toApiPayload = (studentData) => {
 
 export const studentService = {
   getAll: async (params = {}) => {
-    let apiStudents = [];
     let cloudStudents = [];
+    let apiStudents = [];
 
-    // 1. Fetch from FastAPI Backend
+    // 1. Direct Cloud Database Sync (Supabase REST API — 100% Shared Across Devices in Real Time)
+    try {
+      const cloudList = await cloudSyncService.getAllStudents();
+      if (Array.isArray(cloudList) && cloudList.length > 0) {
+        cloudStudents = cloudList.map(normalizeStudent);
+      }
+    } catch (cloudErr) {
+      console.warn('[StudentService] Cloud sync fetch warning:', cloudErr?.message);
+    }
+
+    // 2. Fetch from FastAPI Backend if available
     try {
       const queryParams = { page_size: 500, page: 1, ...params };
       const query = new URLSearchParams(queryParams).toString();
@@ -72,17 +100,7 @@ export const studentService = {
         apiStudents = list.map(normalizeStudent);
       }
     } catch (err) {
-      console.warn('[StudentService] FastAPI endpoint warning, switching to cloud sync:', err?.message);
-    }
-
-    // 2. Direct Cloud Database Sync (Supabase REST API — 100% Shared Across Devices)
-    try {
-      const cloudList = await cloudSyncService.getAllStudents();
-      if (Array.isArray(cloudList) && cloudList.length > 0) {
-        cloudStudents = cloudList.map(normalizeStudent);
-      }
-    } catch (cloudErr) {
-      console.warn('[StudentService] Cloud sync fetch warning:', cloudErr?.message);
+      // Expected if Render is sleeping; Supabase already handles data
     }
 
     // 3. Combine and Deduplicate Local Cache, Cloud DB, and FastAPI data
@@ -94,12 +112,13 @@ export const studentService = {
       if (key) mergedMap.set(String(key), s);
     });
 
-    cloudStudents.forEach((s) => {
+    apiStudents.forEach((s) => {
       const key = s.id || s.student_number;
       if (key) mergedMap.set(String(key), s);
     });
 
-    apiStudents.forEach((s) => {
+    // Cloud records overwrite stale local cache
+    cloudStudents.forEach((s) => {
       const key = s.id || s.student_number;
       if (key) mergedMap.set(String(key), s);
     });
@@ -146,34 +165,7 @@ export const studentService = {
       throw new Error(`Room ${roomNum} on Floor ${floorNum} is already full (maximum 2 students allowed per room).`);
     }
 
-    const payload = toApiPayload(studentData);
-    payload.created_by = currentUser?.id || null;
-    payload.creator_name = currentUser?.full_name || 'Wing Leader';
-
-    // 1. Try FastAPI backend
-    try {
-      const result = await apiClient('/students', {
-        method: 'POST',
-        body: JSON.stringify(payload),
-      });
-      if (result) {
-        const normalized = normalizeStudent(result);
-        await cloudSyncService.addStudent(normalized);
-        const updatedList = [normalized, ...currentList.filter(s => s.id !== normalized.id)];
-        saveLocalStudents(updatedList);
-        return normalized;
-      }
-    } catch (err) {
-      if (err.message && (
-        err.message.toLowerCase().includes('capacity') ||
-        err.message.toLowerCase().includes('already exists')
-      )) {
-        throw err;
-      }
-      console.warn('[StudentService] FastAPI post warning, storing to shared cloud DB:', err?.message);
-    }
-
-    // 2. Write to Shared Cloud Database (Supabase REST API)
+    // 1. Write to Shared Cloud Database (Supabase REST API — 100% Online Persistence)
     const cloudRecord = await cloudSyncService.addStudent({
       ...studentData,
       creator_name: currentUser?.full_name || 'Wing Leader',
@@ -182,53 +174,54 @@ export const studentService = {
     const normalized = normalizeStudent(cloudRecord);
     const updatedList = [normalized, ...currentList.filter(s => s.id !== normalized.id)];
     saveLocalStudents(updatedList);
+
+    // 2. Background sync to FastAPI backend if available
+    try {
+      const payload = toApiPayload(studentData);
+      payload.created_by = currentUser?.id || null;
+      payload.creator_name = currentUser?.full_name || 'Wing Leader';
+      apiClient('/students', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      }).catch(() => {});
+    } catch {}
+
     return normalized;
   },
 
   update: async (id, studentData) => {
-    const payload = toApiPayload(studentData);
-
-    // 1. Try FastAPI backend
-    try {
-      const result = await apiClient(`/students/${id}`, {
-        method: 'PUT',
-        body: JSON.stringify(payload),
-      });
-      if (result) {
-        const normalized = normalizeStudent(result);
-        await cloudSyncService.updateStudent(id, normalized);
-        const currentList = getLocalStudents();
-        const updatedList = currentList.map(s => (s.id === id ? normalized : s));
-        saveLocalStudents(updatedList);
-        return normalized;
-      }
-    } catch (err) {
-      console.warn('[StudentService] FastAPI update warning, updating shared cloud DB:', err?.message);
-    }
-
-    // 2. Direct Cloud DB Update
+    // 1. Direct Cloud DB Update (Supabase)
     const cloudRecord = await cloudSyncService.updateStudent(id, studentData);
     const normalized = normalizeStudent(cloudRecord);
     const currentList = getLocalStudents();
     const updatedList = currentList.map(s => (s.id === id ? normalized : s));
     saveLocalStudents(updatedList);
+
+    // 2. Background sync to FastAPI backend if available
+    try {
+      const payload = toApiPayload(studentData);
+      apiClient(`/students/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(payload),
+      }).catch(() => {});
+    } catch {}
+
     return normalized;
   },
 
   delete: async (id) => {
-    // 1. Try FastAPI backend
-    try {
-      await apiClient(`/students/${id}`, { method: 'DELETE' });
-    } catch (err) {
-      console.warn('[StudentService] FastAPI delete warning, deleting from shared cloud DB:', err?.message);
-    }
-
-    // 2. Delete from Shared Cloud Database
+    // 1. Delete from Shared Cloud Database
     await cloudSyncService.deleteStudent(id);
 
     const currentList = getLocalStudents();
     const filtered = currentList.filter(s => s.id !== id);
     saveLocalStudents(filtered);
+
+    // 2. Background sync to FastAPI backend if available
+    try {
+      apiClient(`/students/${id}`, { method: 'DELETE' }).catch(() => {});
+    } catch {}
+
     return { success: true, message: 'Student deleted successfully' };
   },
 

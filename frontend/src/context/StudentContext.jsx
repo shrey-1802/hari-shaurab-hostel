@@ -15,8 +15,8 @@ export const StudentProvider = ({ children }) => {
   const [selectedFloor, setSelectedFloor] = useState('ALL');
   const [selectedDept, setSelectedDept] = useState('ALL');
 
-  const fetchStudents = async () => {
-    setLoading(true);
+  const fetchStudents = async (isBackground = false) => {
+    if (!isBackground) setLoading(true);
     try {
       const data = await studentService.getAll();
       setStudents(data);
@@ -25,18 +25,18 @@ export const StudentProvider = ({ children }) => {
     } catch (error) {
       console.error('Failed to load students:', error);
     } finally {
-      setLoading(false);
+      if (!isBackground) setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchStudents();
+    fetchStudents(false);
 
-    // 5-second live cloud sync interval: Ensures Wing Leader changes automatically
+    // 4-second live cloud sync interval: Ensures Wing Leader changes automatically
     // reflect to Main Leader and Main Leader changes reflect to Wing Leaders in real-time
     const syncInterval = setInterval(() => {
-      fetchStudents();
-    }, 5000);
+      fetchStudents(true);
+    }, 4000);
 
     // Listen for storage updates across tabs & window focus
     const handleRefresh = () => {

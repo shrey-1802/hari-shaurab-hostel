@@ -64,30 +64,33 @@ export const cloudSyncService = {
     const rawPhoto = student.profile_image_url || student.profile_picture_url || '';
     const cleanPhoto = sanitizePhotoUrl(rawPhoto);
 
+    // Pack non-core fields into address column as JSON so Supabase doesn't reject with schema cache error
+    const extraDetails = {
+      college_name: student.college_name || 'Hari-Saurabh Institute of Technology',
+      department: student.department || '',
+      parent_name: student.parent_name || '',
+      parent_mobile: student.parent_mobile || '',
+      semester_result: student.semester_result || '',
+      hobby: student.hobby || '',
+      hostel_friends: student.hostel_friends || '',
+      non_hostel_friends: student.non_hostel_friends || '',
+      registration_status: student.registration_status || 'APPROVED',
+      registered_via_link: student.registered_via_link || null,
+      registration_source: student.registration_source || 'MANUAL',
+    };
+
     const payload = {
       full_name: student.full_name || 'Hostel Student',
       date_of_birth: student.dob || student.date_of_birth || '2000-01-01',
       student_number: student.student_number || `HS-${Date.now().toString().slice(-6)}`,
       student_mobile: student.student_mobile || student.mobile || '',
       mobile: student.student_mobile || student.mobile || '',
-      parent_name: student.parent_name || '',
-      parent_mobile: student.parent_mobile || '',
-      college_name: student.college_name || 'Hari-Saurabh Institute of Technology',
-      department: student.department || '',
-      semester_result: student.semester_result || '',
-      hobby: student.hobby || '',
-      hostel_friends: student.hostel_friends || '',
-      non_hostel_friends: student.non_hostel_friends || '',
       floor_number: Number(student.floor_number) || 4,
       room_number: String(student.room_number) || '401',
       profile_picture_url: cleanPhoto,
-      profile_photo_url: cleanPhoto,
       creator_name: student.creator_name || 'Wing Leader',
+      address: JSON.stringify(extraDetails),
     };
-
-    if (student.registration_status) {
-      payload.registration_status = student.registration_status;
-    }
 
     try {
       let response = await fetch(`${SUPABASE_URL}/rest/v1/students`, {
@@ -130,6 +133,7 @@ export const cloudSyncService = {
     // Local fallback with flag for auto-retry sync
     const fallbackRecord = {
       ...payload,
+      ...extraDetails,
       id: student.id || `stu-${Date.now()}`,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
@@ -152,18 +156,25 @@ export const cloudSyncService = {
    */
   updateStudent: async (id, student) => {
     const rawPhoto = student.profile_image_url || student.profile_picture_url;
-    const payload = {
-      full_name: student.full_name,
-      date_of_birth: student.dob || student.date_of_birth,
-      student_mobile: student.student_mobile,
-      parent_name: student.parent_name,
-      parent_mobile: student.parent_mobile,
+
+    const extraDetails = {
       college_name: student.college_name,
       department: student.department,
+      parent_name: student.parent_name,
+      parent_mobile: student.parent_mobile,
       semester_result: student.semester_result,
       hobby: student.hobby,
       hostel_friends: student.hostel_friends,
       non_hostel_friends: student.non_hostel_friends,
+      registration_status: student.registration_status,
+    };
+    Object.keys(extraDetails).forEach(key => extraDetails[key] === undefined && delete extraDetails[key]);
+
+    const payload = {
+      full_name: student.full_name,
+      date_of_birth: student.dob || student.date_of_birth,
+      student_mobile: student.student_mobile,
+      mobile: student.student_mobile,
       floor_number: student.floor_number ? Number(student.floor_number) : undefined,
       room_number: student.room_number ? String(student.room_number) : undefined,
     };
@@ -171,8 +182,8 @@ export const cloudSyncService = {
     if (rawPhoto) {
       payload.profile_picture_url = sanitizePhotoUrl(rawPhoto);
     }
-    if (student.registration_status) {
-      payload.registration_status = student.registration_status;
+    if (Object.keys(extraDetails).length > 0) {
+      payload.address = JSON.stringify(extraDetails);
     }
 
     // Clean undefined fields
@@ -190,7 +201,7 @@ export const cloudSyncService = {
         const record = Array.isArray(updated) ? updated[0] : updated;
         if (record) {
           const existing = cloudSyncService.getCachedStudents();
-          const list = existing.map(s => (s.id === id ? { ...s, ...record } : s));
+          const list = existing.map(s => (s.id === id ? { ...s, ...record, ...extraDetails } : s));
           localStorage.setItem(CLOUD_CACHE_KEY, JSON.stringify(list));
 
           if (typeof window !== 'undefined') {
@@ -242,37 +253,51 @@ export const cloudSyncService = {
    * Auto-sync any locally created records up to Supabase Cloud DB
    */
   syncPendingLocalStudentsToCloud: async (cloudRecords = []) => {
-    const localRecords = cloudSyncService.getCachedStudents();
-    const cloudIdSet = new Set(cloudRecords.map(s => String(s.id)));
-    const cloudStudentNumSet = new Set(cloudRecords.map(s => String(s.student_number)));
+    // Collect records from both cache keys
+    const cacheV5 = cloudSyncService.getCachedStudents();
+    let legacyLocal = [];
+    try {
+      const raw = localStorage.getItem('hs_students_data');
+      if (raw) legacyLocal = JSON.parse(raw);
+    } catch {}
 
-    const pendingLocal = localRecords.filter((s) => {
-      if (s._pending_cloud_sync) return true;
-      if (typeof s.id === 'string' && s.id.startsWith('stu-') && !cloudStudentNumSet.has(String(s.student_number))) {
-        return true;
-      }
-      return false;
+    const allLocal = [...cacheV5, ...legacyLocal];
+    const cloudStudentNumSet = new Set(cloudRecords.map(s => String(s.student_number || '').trim()));
+    const cloudNameSet = new Set(cloudRecords.map(s => `${s.full_name}_${s.floor_number}_${s.room_number}`.toLowerCase()));
+
+    const pendingLocal = allLocal.filter((s) => {
+      if (!s || !s.full_name) return false;
+      const numKey = String(s.student_number || '').trim();
+      const nameKey = `${s.full_name}_${s.floor_number}_${s.room_number}`.toLowerCase();
+      // If student not in cloud, sync it
+      return !cloudStudentNumSet.has(numKey) && !cloudNameSet.has(nameKey);
     });
 
     for (const student of pendingLocal) {
       try {
-        const payload = {
-          full_name: student.full_name || 'Hostel Student',
-          date_of_birth: student.dob || student.date_of_birth || '2000-01-01',
-          student_number: student.student_number || `HS-${Date.now().toString().slice(-6)}`,
-          student_mobile: student.student_mobile || '',
-          parent_name: student.parent_name || '',
-          parent_mobile: student.parent_mobile || '',
+        const extraDetails = {
           college_name: student.college_name || 'Hari-Saurabh Institute of Technology',
           department: student.department || '',
+          parent_name: student.parent_name || '',
+          parent_mobile: student.parent_mobile || '',
           semester_result: student.semester_result || '',
           hobby: student.hobby || '',
           hostel_friends: student.hostel_friends || '',
           non_hostel_friends: student.non_hostel_friends || '',
+          registration_status: student.registration_status || 'APPROVED',
+        };
+
+        const payload = {
+          full_name: student.full_name || 'Hostel Student',
+          date_of_birth: student.dob || student.date_of_birth || '2000-01-01',
+          student_number: student.student_number || `HS-${Date.now().toString().slice(-6)}`,
+          student_mobile: student.student_mobile || student.mobile || '',
+          mobile: student.student_mobile || student.mobile || '',
           floor_number: Number(student.floor_number) || 4,
           room_number: String(student.room_number) || '401',
           profile_picture_url: sanitizePhotoUrl(student.profile_picture_url || student.profile_image_url),
           creator_name: student.creator_name || 'Wing Leader',
+          address: JSON.stringify(extraDetails),
         };
 
         const res = await fetch(`${SUPABASE_URL}/rest/v1/students`, {
