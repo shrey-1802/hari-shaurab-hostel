@@ -34,6 +34,7 @@ class User(Base):
     notifications = relationship("Notification", back_populates="recipient")
     audit_logs = relationship("AuditLog", back_populates="user")
     browser_subscriptions = relationship("BrowserSubscription", back_populates="user")
+    registration_links = relationship("RegistrationLink", back_populates="wing_leader")
 
     def __repr__(self):
         return f"<User id={self.id} email={self.email} role={self.role} floor={self.floor_number} rooms={self.room_start}-{self.room_end}>"

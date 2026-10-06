@@ -62,6 +62,11 @@ class StudentUpdate(BaseModel):
 class StudentResponse(StudentBase):
     id: UUID
     profile_picture_url: Optional[str] = None
+    registration_status: Optional[str] = "APPROVED"
+    registered_via_link: Optional[str] = None
+    registration_source: Optional[str] = "MANUAL"
+    approved_by: Optional[UUID] = None
+    approved_at: Optional[datetime] = None
     created_by: Optional[UUID] = None
     creator_name: Optional[str] = None
     creator_email: Optional[str] = None

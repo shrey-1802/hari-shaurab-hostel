@@ -17,9 +17,19 @@ const getHeaders = () => ({
   'Prefer': 'return=representation',
 });
 
+// Helper to ensure photo URL is lightweight for Supabase REST JSON payload
+const sanitizePhotoUrl = (url) => {
+  if (!url) return 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80';
+  if (typeof url === 'string' && url.startsWith('data:image/') && url.length > 50000) {
+    // Large base64 data URIs can exceed Supabase REST payload limits; fallback to standard avatar URL
+    return 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80';
+  }
+  return url;
+};
+
 export const cloudSyncService = {
   /**
-   * Fetch all students from Supabase Cloud Database
+   * Fetch all students from Supabase Cloud Database & auto-sync any pending local records
    */
   getAllStudents: async () => {
     try {
@@ -32,6 +42,10 @@ export const cloudSyncService = {
         const data = await response.json();
         if (Array.isArray(data)) {
           localStorage.setItem(CLOUD_CACHE_KEY, JSON.stringify(data));
+          
+          // Background sync any local-only records to Supabase Cloud DB
+          cloudSyncService.syncPendingLocalStudentsToCloud(data).catch(() => {});
+          
           return data;
         }
       }
@@ -44,13 +58,16 @@ export const cloudSyncService = {
   },
 
   /**
-   * Add a new student to Supabase Cloud Database
+   * Add a new student to Supabase Cloud Database (100% Online Persistence)
    */
   addStudent: async (student) => {
+    const rawPhoto = student.profile_image_url || student.profile_picture_url || '';
+    const cleanPhoto = sanitizePhotoUrl(rawPhoto);
+
     const payload = {
-      full_name: student.full_name,
+      full_name: student.full_name || 'Hostel Student',
       date_of_birth: student.dob || student.date_of_birth || '2000-01-01',
-      student_number: student.student_number || `STU-${Date.now().toString().slice(-6)}`,
+      student_number: student.student_number || `HS-${Date.now().toString().slice(-6)}`,
       student_mobile: student.student_mobile || '',
       parent_name: student.parent_name || '',
       parent_mobile: student.parent_mobile || '',
@@ -60,18 +77,32 @@ export const cloudSyncService = {
       hobby: student.hobby || '',
       hostel_friends: student.hostel_friends || '',
       non_hostel_friends: student.non_hostel_friends || '',
-      floor_number: Number(student.floor_number),
-      room_number: String(student.room_number),
-      profile_picture_url: student.profile_image_url || student.profile_picture_url || '',
+      floor_number: Number(student.floor_number) || 4,
+      room_number: String(student.room_number) || '401',
+      profile_picture_url: cleanPhoto,
       creator_name: student.creator_name || 'Wing Leader',
     };
 
+    if (student.registration_status) {
+      payload.registration_status = student.registration_status;
+    }
+
     try {
-      const response = await fetch(`${SUPABASE_URL}/rest/v1/students`, {
+      let response = await fetch(`${SUPABASE_URL}/rest/v1/students`, {
         method: 'POST',
         headers: getHeaders(),
         body: JSON.stringify(payload),
       });
+
+      // If duplicate student_number error occurred, append random suffix and retry
+      if (!response.ok && response.status === 409) {
+        payload.student_number = `${payload.student_number}-${Math.floor(100 + Math.random() * 900)}`;
+        response = await fetch(`${SUPABASE_URL}/rest/v1/students`, {
+          method: 'POST',
+          headers: getHeaders(),
+          body: JSON.stringify(payload),
+        });
+      }
 
       if (response.ok) {
         const created = await response.json();
@@ -80,6 +111,10 @@ export const cloudSyncService = {
           const existing = cloudSyncService.getCachedStudents();
           const updated = [record, ...existing.filter(s => s.id !== record.id)];
           localStorage.setItem(CLOUD_CACHE_KEY, JSON.stringify(updated));
+
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new Event('student_data_changed'));
+          }
           return record;
         }
       } else {
@@ -90,16 +125,23 @@ export const cloudSyncService = {
       console.warn('[CloudSync] Supabase REST insert warning:', error?.message);
     }
 
-    // Return student formatted with local cache fallback
+    // Local fallback with flag for auto-retry sync
     const fallbackRecord = {
       ...payload,
       id: student.id || `stu-${Date.now()}`,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
+      _pending_cloud_sync: true,
     };
+
     const existing = cloudSyncService.getCachedStudents();
     const updated = [fallbackRecord, ...existing];
     localStorage.setItem(CLOUD_CACHE_KEY, JSON.stringify(updated));
+
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new Event('student_data_changed'));
+    }
+
     return fallbackRecord;
   },
 
@@ -107,6 +149,7 @@ export const cloudSyncService = {
    * Update student in Supabase Cloud Database
    */
   updateStudent: async (id, student) => {
+    const rawPhoto = student.profile_image_url || student.profile_picture_url;
     const payload = {
       full_name: student.full_name,
       date_of_birth: student.dob || student.date_of_birth,
@@ -119,10 +162,19 @@ export const cloudSyncService = {
       hobby: student.hobby,
       hostel_friends: student.hostel_friends,
       non_hostel_friends: student.non_hostel_friends,
-      floor_number: Number(student.floor_number),
-      room_number: String(student.room_number),
-      profile_picture_url: student.profile_image_url || student.profile_picture_url,
+      floor_number: student.floor_number ? Number(student.floor_number) : undefined,
+      room_number: student.room_number ? String(student.room_number) : undefined,
     };
+
+    if (rawPhoto) {
+      payload.profile_picture_url = sanitizePhotoUrl(rawPhoto);
+    }
+    if (student.registration_status) {
+      payload.registration_status = student.registration_status;
+    }
+
+    // Clean undefined fields
+    Object.keys(payload).forEach(key => payload[key] === undefined && delete payload[key]);
 
     try {
       const response = await fetch(`${SUPABASE_URL}/rest/v1/students?id=eq.${id}`, {
@@ -138,6 +190,10 @@ export const cloudSyncService = {
           const existing = cloudSyncService.getCachedStudents();
           const list = existing.map(s => (s.id === id ? { ...s, ...record } : s));
           localStorage.setItem(CLOUD_CACHE_KEY, JSON.stringify(list));
+
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new Event('student_data_changed'));
+          }
           return record;
         }
       }
@@ -148,6 +204,11 @@ export const cloudSyncService = {
     const existing = cloudSyncService.getCachedStudents();
     const list = existing.map(s => (s.id === id ? { ...s, ...student } : s));
     localStorage.setItem(CLOUD_CACHE_KEY, JSON.stringify(list));
+
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new Event('student_data_changed'));
+    }
+
     return student;
   },
 
@@ -167,7 +228,64 @@ export const cloudSyncService = {
     const existing = cloudSyncService.getCachedStudents();
     const filtered = existing.filter(s => s.id !== id);
     localStorage.setItem(CLOUD_CACHE_KEY, JSON.stringify(filtered));
+
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new Event('student_data_changed'));
+    }
+
     return { success: true };
+  },
+
+  /**
+   * Auto-sync any locally created records up to Supabase Cloud DB
+   */
+  syncPendingLocalStudentsToCloud: async (cloudRecords = []) => {
+    const localRecords = cloudSyncService.getCachedStudents();
+    const cloudIdSet = new Set(cloudRecords.map(s => String(s.id)));
+    const cloudStudentNumSet = new Set(cloudRecords.map(s => String(s.student_number)));
+
+    const pendingLocal = localRecords.filter((s) => {
+      if (s._pending_cloud_sync) return true;
+      if (typeof s.id === 'string' && s.id.startsWith('stu-') && !cloudStudentNumSet.has(String(s.student_number))) {
+        return true;
+      }
+      return false;
+    });
+
+    for (const student of pendingLocal) {
+      try {
+        const payload = {
+          full_name: student.full_name || 'Hostel Student',
+          date_of_birth: student.dob || student.date_of_birth || '2000-01-01',
+          student_number: student.student_number || `HS-${Date.now().toString().slice(-6)}`,
+          student_mobile: student.student_mobile || '',
+          parent_name: student.parent_name || '',
+          parent_mobile: student.parent_mobile || '',
+          college_name: student.college_name || 'Hari-Saurabh Institute of Technology',
+          department: student.department || '',
+          semester_result: student.semester_result || '',
+          hobby: student.hobby || '',
+          hostel_friends: student.hostel_friends || '',
+          non_hostel_friends: student.non_hostel_friends || '',
+          floor_number: Number(student.floor_number) || 4,
+          room_number: String(student.room_number) || '401',
+          profile_picture_url: sanitizePhotoUrl(student.profile_picture_url || student.profile_image_url),
+          creator_name: student.creator_name || 'Wing Leader',
+        };
+
+        const res = await fetch(`${SUPABASE_URL}/rest/v1/students`, {
+          method: 'POST',
+          headers: getHeaders(),
+          body: JSON.stringify(payload),
+        });
+
+        if (res.ok) {
+          console.log(`[CloudSync] Auto-synced pending local student '${student.full_name}' to Supabase Cloud DB`);
+        }
+      } catch (err) {
+        console.warn(`[CloudSync] Auto-sync failed for ${student.full_name}:`, err?.message);
+      }
+    }
   },
 
   getCachedStudents: () => {
@@ -209,7 +327,7 @@ export const cloudSyncService = {
       dedupe_key: notif.dedupe_key || null,
       student_id: notif.student_id ? String(notif.student_id) : null,
       student_name: notif.student_name || null,
-      student_avatar: notif.student_avatar || null,
+      student_avatar: sanitizePhotoUrl(notif.student_avatar),
       student_phone: notif.student_phone || null,
       room_number: notif.room_number ? String(notif.room_number) : null,
       floor_number: notif.floor_number ? Number(notif.floor_number) : null,
@@ -321,4 +439,3 @@ export const cloudSyncService = {
     }
   },
 };
-

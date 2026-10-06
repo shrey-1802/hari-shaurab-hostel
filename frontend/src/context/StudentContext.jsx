@@ -143,19 +143,19 @@ export const StudentProvider = ({ children }) => {
 
   const addStudent = async (studentData) => {
     const created = await studentService.create(studentData, user);
-    setStudents((prev) => [created, ...prev]);
+    await fetchStudents();
     return created;
   };
 
   const updateStudent = async (id, studentData) => {
     const updated = await studentService.update(id, studentData);
-    setStudents((prev) => prev.map((s) => (s.id === id ? updated : s)));
+    await fetchStudents();
     return updated;
   };
 
   const deleteStudent = async (id) => {
     await studentService.delete(id);
-    setStudents((prev) => prev.filter((s) => s.id !== id));
+    await fetchStudents();
   };
 
   // Metrics

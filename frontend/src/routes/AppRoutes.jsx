@@ -15,6 +15,8 @@ import { Settings } from '../pages/settings/Settings';
 import { NotFound } from '../pages/NotFound';
 import { ProtectedRoute } from './ProtectedRoute';
 
+import { StudentSelfRegistrationPage } from '../pages/registration/StudentSelfRegistrationPage';
+
 export const AppRoutes = () => {
   return (
     <Routes>
@@ -22,6 +24,7 @@ export const AppRoutes = () => {
       <Route path="/" element={<LandingPage />} />
       <Route path="/login" element={<Login />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
+      <Route path="/register/:token" element={<StudentSelfRegistrationPage />} />
 
       {/* Protected Leader & Admin Routes */}
       <Route element={<ProtectedRoute />}>

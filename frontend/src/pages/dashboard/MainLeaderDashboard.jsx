@@ -19,8 +19,11 @@ import {
 import { isBirthdayToday, isBirthdayTomorrow } from '../../utils/helpers';
 import { FLOORS } from '../../utils/constants';
 
+import { PendingRegistrationsList } from '../../components/registration/PendingRegistrationsList';
+import { RoomOccupancyWidget } from '../../components/dashboard/RoomOccupancyWidget';
+
 export const MainLeaderDashboard = () => {
-  const { students, stats } = useStudents();
+  const { students, stats, fetchStudents } = useStudents();
   const { unreadCount } = useNotifications();
 
   // Approaching alerts count (Today + Tomorrow)
@@ -123,14 +126,15 @@ export const MainLeaderDashboard = () => {
             </div>
           </div>
           <div className="text-3xl font-black text-[#4A4A4A]">{unreadCount} Unread</div>
-          <div className="flex items-center justify-between mt-3 text-xs text-gray-500">
-            <span>Proactive Wing Alerts</span>
-            <Link to="/notifications" className="font-bold text-purple-600 hover:underline">
-              Review →
-            </Link>
           </div>
         </Card>
       </div>
+
+      {/* Pending Registrations Review Section for Main Leader */}
+      <PendingRegistrationsList onStatusChange={fetchStudents} />
+
+      {/* Live Room Occupancy Widget across all rooms */}
+      <RoomOccupancyWidget />
 
       {/* Dedicated Birthday Alert Dashboard Section */}
       <BirthdayDashboardSection />

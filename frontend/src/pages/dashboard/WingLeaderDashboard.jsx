@@ -18,9 +18,13 @@ import {
 } from 'lucide-react';
 import { formatDate, isBirthdayToday, isBirthdayTomorrow } from '../../utils/helpers';
 
+import { ShareRegistrationLinkCard } from '../../components/registration/ShareRegistrationLinkCard';
+import { PendingRegistrationsList } from '../../components/registration/PendingRegistrationsList';
+import { RoomOccupancyWidget } from '../../components/dashboard/RoomOccupancyWidget';
+
 export const WingLeaderDashboard = () => {
   const { user } = useAuth();
-  const { visibleStudents, stats } = useStudents();
+  const { visibleStudents, stats, fetchStudents } = useStudents();
   const assignedFloor = user?.assigned_floor || 4;
 
   const floorStudents = visibleStudents;
@@ -51,6 +55,9 @@ export const WingLeaderDashboard = () => {
           </Link>
         </div>
       </div>
+
+      {/* Share Registration Link Card for Wing Leader */}
+      <ShareRegistrationLinkCard />
 
       {/* 3 KPI Cards for Wing Leader */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -87,6 +94,12 @@ export const WingLeaderDashboard = () => {
           <p className="text-xs text-gray-500 mt-2">Authorized Wing Leader credentials</p>
         </Card>
       </div>
+
+      {/* Pending Student Registrations Review Section */}
+      <PendingRegistrationsList onStatusChange={fetchStudents} />
+
+      {/* Live Room Occupancy Widget */}
+      <RoomOccupancyWidget floorFilter={assignedFloor} />
 
       {/* Birthday Alert Section for Floor */}
       <BirthdayDashboardSection />

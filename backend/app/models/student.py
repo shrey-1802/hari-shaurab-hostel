@@ -42,6 +42,13 @@ class Student(Base):
     profile_picture_url = Column(String(500), nullable=True)
     profile_picture_path = Column(String(500), nullable=True)  # Supabase storage path
 
+    # Self Registration & Approval Info
+    registration_status = Column(String(50), default="APPROVED", nullable=False, index=True) # PENDING, APPROVED, REJECTED
+    registered_via_link = Column(String(100), nullable=True)
+    approved_by = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    approved_at = Column(DateTime(timezone=True), nullable=True)
+    registration_source = Column(String(50), default="MANUAL", nullable=False) # MANUAL, SELF_REGISTRATION
+
     # Metadata
     created_by = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
@@ -53,6 +60,7 @@ class Student(Base):
 
     # Relationships
     creator = relationship("User", back_populates="created_students", foreign_keys=[created_by], lazy="joined")
+    approver = relationship("User", foreign_keys=[approved_by], lazy="select")
     birthday_logs = relationship("BirthdayLog", back_populates="student")
 
     @property

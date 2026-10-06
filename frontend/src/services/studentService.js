@@ -59,16 +59,17 @@ const toApiPayload = (studentData) => {
 
 export const studentService = {
   getAll: async (params = {}) => {
-    // 1. Try Live Render FastAPI Backend first
+    let apiStudents = [];
+    let cloudStudents = [];
+
+    // 1. Fetch from FastAPI Backend
     try {
       const queryParams = { page_size: 500, page: 1, ...params };
       const query = new URLSearchParams(queryParams).toString();
       const response = await apiClient(`/students?${query}`);
       const list = Array.isArray(response) ? response : (response?.students || []);
       if (list && list.length > 0) {
-        const normalized = list.map(normalizeStudent);
-        saveLocalStudents(normalized);
-        return normalized;
+        apiStudents = list.map(normalizeStudent);
       }
     } catch (err) {
       console.warn('[StudentService] FastAPI endpoint warning, switching to cloud sync:', err?.message);
@@ -78,41 +79,51 @@ export const studentService = {
     try {
       const cloudList = await cloudSyncService.getAllStudents();
       if (Array.isArray(cloudList) && cloudList.length > 0) {
-        const normalized = cloudList.map(normalizeStudent);
-        saveLocalStudents(normalized);
-
-        let list = normalized;
-        if (params.floor_number) {
-          list = list.filter(s => Number(s.floor_number) === Number(params.floor_number));
-        }
-        if (params.search) {
-          const q = params.search.toLowerCase();
-          list = list.filter(s =>
-            s.full_name?.toLowerCase().includes(q) ||
-            s.room_number?.toLowerCase().includes(q) ||
-            s.department?.toLowerCase().includes(q)
-          );
-        }
-        return list;
+        cloudStudents = cloudList.map(normalizeStudent);
       }
     } catch (cloudErr) {
       console.warn('[StudentService] Cloud sync fetch warning:', cloudErr?.message);
     }
 
-    // 3. Fallback to Local Cache
-    let list = getLocalStudents().map(normalizeStudent);
+    // 3. Combine and Deduplicate Local Cache, Cloud DB, and FastAPI data
+    const localStudents = getLocalStudents().map(normalizeStudent);
+    const mergedMap = new Map();
+
+    localStudents.forEach((s) => {
+      const key = s.id || s.student_number;
+      if (key) mergedMap.set(String(key), s);
+    });
+
+    cloudStudents.forEach((s) => {
+      const key = s.id || s.student_number;
+      if (key) mergedMap.set(String(key), s);
+    });
+
+    apiStudents.forEach((s) => {
+      const key = s.id || s.student_number;
+      if (key) mergedMap.set(String(key), s);
+    });
+
+    let mergedList = Array.from(mergedMap.values());
+    mergedList.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
+
+    if (mergedList.length > 0) {
+      saveLocalStudents(mergedList);
+    }
+
+    // Apply filtering if params provided
     if (params.floor_number) {
-      list = list.filter(s => Number(s.floor_number) === Number(params.floor_number));
+      mergedList = mergedList.filter(s => Number(s.floor_number) === Number(params.floor_number));
     }
     if (params.search) {
       const q = params.search.toLowerCase();
-      list = list.filter(s =>
+      mergedList = mergedList.filter(s =>
         s.full_name?.toLowerCase().includes(q) ||
         s.room_number?.toLowerCase().includes(q) ||
         s.department?.toLowerCase().includes(q)
       );
     }
-    return list;
+    return mergedList;
   },
 
   getById: async (id) => {
