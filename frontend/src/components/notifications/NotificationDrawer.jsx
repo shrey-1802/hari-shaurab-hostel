@@ -288,6 +288,15 @@ export const NotificationDrawer = ({ isOpen, onClose }) => {
                     Mark Read
                   </button>
                 )}
+                {activeTab === 'all' && notifications.length > 0 && (
+                  <button
+                    onClick={clearAll}
+                    className="text-xs font-semibold text-red-600 hover:text-red-700 flex items-center gap-1 bg-red-50 px-2 py-1 rounded-lg border border-red-200 font-bold"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    Clear Logs
+                  </button>
+                )}
               </div>
             </div>
           </motion.div>

@@ -7,12 +7,12 @@ import { WishOnWhatsAppButton } from '../../components/birthdays';
 import { Card } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
 import { Button } from '../../components/ui/Button';
-import { Bell, Cake, Info, CheckCheck, Sparkles, Clock, ArrowRight } from 'lucide-react';
+import { Bell, Cake, Info, CheckCheck, Sparkles, Clock, ArrowRight, Trash2 } from 'lucide-react';
 import { formatDate, formatBirthdayDateOnly, isBirthdayToday, isBirthdayTomorrow, getDaysUntilBirthday } from '../../utils/helpers';
 import { usePageTitle } from '../../utils/usePageTitle';
 
 export const NotificationCenter = () => {
-  const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotifications();
+  const { notifications, unreadCount, markAsRead, markAllAsRead, clearAll } = useNotifications();
   const { students } = useStudents();
   const { user, isMainLeader } = useAuth();
   usePageTitle('Notifications');
@@ -55,11 +55,24 @@ export const NotificationCenter = () => {
           </p>
         </div>
 
-        {unreadCount > 0 && (
-          <Button variant="secondary" size="sm" onClick={markAllAsRead} icon={CheckCheck}>
-            Mark All as Read
-          </Button>
-        )}
+        <div className="flex items-center gap-2">
+          {unreadCount > 0 && (
+            <Button variant="secondary" size="sm" onClick={markAllAsRead} icon={CheckCheck}>
+              Mark All Read
+            </Button>
+          )}
+          {notifications.length > 0 && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={clearAll}
+              icon={Trash2}
+              className="text-red-600 border-red-200 hover:bg-red-50 hover:border-red-300 font-bold"
+            >
+              Clear Logs
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Approaching Birthday Alerts Section (Notification Cards) */}

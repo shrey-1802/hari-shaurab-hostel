@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { authService } from '../services/authService';
+import { pushNotificationService } from '../services/pushNotificationService';
 
 const AuthContext = createContext();
 
@@ -13,6 +14,17 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     if (user) {
       localStorage.setItem('hs_current_user', JSON.stringify(user));
+
+      // Auto-ask browser notification permission on login for new devices & save permanently
+      if (typeof window !== 'undefined' && 'Notification' in window) {
+        if (Notification.permission === 'default') {
+          setTimeout(() => {
+            pushNotificationService.requestPermission(user.email || user.username);
+          }, 1200);
+        } else if (Notification.permission === 'granted') {
+          pushNotificationService.subscribeUser(user.email || user.username);
+        }
+      }
     } else {
       localStorage.removeItem('hs_current_user');
     }
