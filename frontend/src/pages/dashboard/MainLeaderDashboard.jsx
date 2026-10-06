@@ -126,7 +126,6 @@ export const MainLeaderDashboard = () => {
             </div>
           </div>
           <div className="text-3xl font-black text-[#4A4A4A]">{unreadCount} Unread</div>
-          </div>
         </Card>
       </div>
 

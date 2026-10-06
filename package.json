@@ -10,6 +10,9 @@
     "dev": "npm --prefix frontend run dev",
     "preview": "npm --prefix frontend run preview"
   },
+  "allowScripts": {
+    "esbuild": true
+  },
   "engines": {
     "node": ">=18.0.0"
   }
