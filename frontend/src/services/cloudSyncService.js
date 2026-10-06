@@ -68,7 +68,8 @@ export const cloudSyncService = {
       full_name: student.full_name || 'Hostel Student',
       date_of_birth: student.dob || student.date_of_birth || '2000-01-01',
       student_number: student.student_number || `HS-${Date.now().toString().slice(-6)}`,
-      student_mobile: student.student_mobile || '',
+      student_mobile: student.student_mobile || student.mobile || '',
+      mobile: student.student_mobile || student.mobile || '',
       parent_name: student.parent_name || '',
       parent_mobile: student.parent_mobile || '',
       college_name: student.college_name || 'Hari-Saurabh Institute of Technology',
@@ -80,6 +81,7 @@ export const cloudSyncService = {
       floor_number: Number(student.floor_number) || 4,
       room_number: String(student.room_number) || '401',
       profile_picture_url: cleanPhoto,
+      profile_photo_url: cleanPhoto,
       creator_name: student.creator_name || 'Wing Leader',
     };
 
