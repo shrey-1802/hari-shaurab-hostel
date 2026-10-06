@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { NotificationBell } from '../notifications/NotificationBell';
 import { User, LogOut, ShieldCheck, PlusCircle, Menu, X } from 'lucide-react';
 import { Button } from '../ui/Button';
 import logoImg from '../../assets/logo.png';
@@ -72,9 +71,6 @@ export const Navbar = ({ isLanding = false, onToggleMobileMenu, isMobileMenuOpen
                   Add Student
                 </Button>
               </Link>
-
-              {/* Notification Bell Component with Badge & Slide-over Drawer */}
-              <NotificationBell />
 
               {/* User Avatar & Info */}
               <div className="flex items-center gap-1.5 sm:gap-3 pl-1 sm:pl-2 border-l border-gray-200">
