@@ -310,13 +310,46 @@ export const cloudSyncService = {
         method: 'DELETE',
         headers: getHeaders(),
       });
+      console.log(`[CloudSync] ✅ Student ${id} deleted online from Supabase DB`);
     } catch (error) {
       console.warn('[CloudSync] Supabase REST delete warning:', error?.message);
     }
 
     const existing = cloudSyncService.getCachedStudents();
-    const filtered = existing.filter(s => s.id !== id);
+    const filtered = existing.filter(s => String(s.id) !== String(id));
     localStorage.setItem(CLOUD_CACHE_KEY, JSON.stringify(filtered));
+
+    try {
+      const raw = localStorage.getItem('hs_students_data');
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        localStorage.setItem('hs_students_data', JSON.stringify(parsed.filter(s => String(s.id) !== String(id))));
+      }
+    } catch {}
+
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new Event('student_data_changed'));
+    }
+
+    return { success: true };
+  },
+
+  /**
+   * Clear all students (for Main Leader to wipe test data completely)
+   */
+  clearAllStudents: async () => {
+    try {
+      await fetch(`${SUPABASE_URL}/rest/v1/students?id=not.is.null`, {
+        method: 'DELETE',
+        headers: getHeaders(),
+      });
+      console.log('[CloudSync] ✅ All students cleared from Supabase DB');
+    } catch (error) {
+      console.warn('[CloudSync] Clear all warning:', error?.message);
+    }
+
+    localStorage.setItem(CLOUD_CACHE_KEY, JSON.stringify([]));
+    localStorage.setItem('hs_students_data', JSON.stringify([]));
 
     if (typeof window !== 'undefined') {
       window.dispatchEvent(new Event('student_data_changed'));
@@ -337,17 +370,12 @@ export const cloudSyncService = {
       if (raw) legacyLocal = JSON.parse(raw);
     } catch {}
 
+    // CRITICAL: Only sync records explicitly flagged as pending offline creations.
+    // Never auto-sync old cached records, preventing deleted test data from re-uploading.
     const allLocal = [...cacheV5, ...legacyLocal];
-    const cloudStudentNumSet = new Set(cloudRecords.map(s => String(s.student_number || '').trim()));
-    const cloudNameSet = new Set(cloudRecords.map(s => `${s.full_name}_${s.floor_number}_${s.room_number}`.toLowerCase()));
+    const pendingLocal = allLocal.filter((s) => s && s._pending_cloud_sync === true && s.full_name);
 
-    const pendingLocal = allLocal.filter((s) => {
-      if (!s || !s.full_name) return false;
-      const numKey = String(s.student_number || '').trim();
-      const nameKey = `${s.full_name}_${s.floor_number}_${s.room_number}`.toLowerCase();
-      // If student not in cloud, sync it
-      return !cloudStudentNumSet.has(numKey) && !cloudNameSet.has(nameKey);
-    });
+    if (pendingLocal.length === 0) return;
 
     for (const student of pendingLocal) {
       const extraDetails = {

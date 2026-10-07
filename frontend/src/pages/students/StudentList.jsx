@@ -10,6 +10,7 @@ import { Card } from '../../components/ui/Card';
 import { FLOORS, DEPARTMENTS, ROLES } from '../../utils/constants';
 import { formatDate } from '../../utils/helpers';
 import { usePageTitle } from '../../utils/usePageTitle';
+import { Modal } from '../../components/ui/Modal';
 import {
   Search,
   Filter,
@@ -20,6 +21,8 @@ import {
   Building2,
   Sparkles,
   Users,
+  Trash2,
+  AlertTriangle,
 } from 'lucide-react';
 
 export const StudentList = () => {
@@ -35,9 +38,13 @@ export const StudentList = () => {
     selectedDept,
     setSelectedDept,
     deleteStudent,
+    clearAllStudents,
   } = useStudents();
 
   const [viewMode, setViewMode] = useState('grid'); // 'grid' | 'table'
+  const [studentToDelete, setStudentToDelete] = useState(null);
+  const [showClearAllModal, setShowClearAllModal] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
 
   const handleExportCSV = () => {
     if (!visibleStudents.length) return;
@@ -68,7 +75,18 @@ export const StudentList = () => {
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
+          {isMainLeader && visibleStudents.length > 0 && (
+            <Button
+              variant="outline"
+              size="md"
+              onClick={() => setShowClearAllModal(true)}
+              className="text-red-500 border-red-200 hover:bg-red-50 hover:border-red-300 font-bold"
+              icon={Trash2}
+            >
+              Clear Test Data
+            </Button>
+          )}
           <Button variant="secondary" size="md" onClick={handleExportCSV} icon={Download}>
             Export CSV
           </Button>
@@ -243,11 +261,24 @@ export const StudentList = () => {
                       </td>
                     )}
                     <td className="py-3.5 text-right">
-                      <Link to={`/student/${student.id}`}>
-                        <Button variant="primary" size="sm">
-                          Profile
-                        </Button>
-                      </Link>
+                      <div className="flex items-center justify-end gap-2">
+                        <Link to={`/student/${student.id}`}>
+                          <Button variant="primary" size="sm">
+                            Profile
+                          </Button>
+                        </Link>
+                        {isMainLeader && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="text-red-500 border-red-200 hover:bg-red-50 hover:border-red-300 px-2.5"
+                            title="Delete Student (Main Leader)"
+                            onClick={() => setStudentToDelete(student)}
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </Button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -256,6 +287,97 @@ export const StudentList = () => {
           </div>
         </Card>
       )}
+
+      {/* Single Student Delete Confirmation Modal */}
+      <Modal
+        isOpen={Boolean(studentToDelete)}
+        onClose={() => !isProcessing && setStudentToDelete(null)}
+        title="Confirm Student Deletion"
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-gray-600 leading-relaxed">
+            Are you sure you want to permanently delete <span className="font-bold text-[#4A4A4A]">{studentToDelete?.full_name}</span> (Floor {studentToDelete?.floor_number}, Room {studentToDelete?.room_number})?
+          </p>
+          <div className="p-3 bg-red-50 rounded-xl border border-red-200 text-xs text-red-700 font-medium">
+            ⚠️ This will remove the student record permanently from Supabase Cloud and all dashboards.
+          </div>
+          <div className="flex justify-end gap-3 pt-3 border-t border-gray-100">
+            <Button
+              variant="secondary"
+              size="md"
+              disabled={isProcessing}
+              onClick={() => setStudentToDelete(null)}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="danger"
+              size="md"
+              disabled={isProcessing}
+              onClick={async () => {
+                if (!studentToDelete) return;
+                setIsProcessing(true);
+                try {
+                  await deleteStudent(studentToDelete.id);
+                  setStudentToDelete(null);
+                } finally {
+                  setIsProcessing(false);
+                }
+              }}
+              icon={Trash2}
+            >
+              {isProcessing ? 'Deleting...' : 'Delete Student'}
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Clear All Test Data Modal */}
+      <Modal
+        isOpen={showClearAllModal}
+        onClose={() => !isProcessing && setShowClearAllModal(false)}
+        title="Reset & Clean Test Data"
+      >
+        <div className="space-y-4">
+          <div className="flex items-center gap-3 p-3.5 rounded-2xl bg-amber-50 border border-amber-200 text-amber-900">
+            <AlertTriangle className="w-6 h-6 text-amber-600 flex-shrink-0" />
+            <div className="text-xs leading-relaxed">
+              <span className="font-bold block text-sm mb-0.5">Wipe All Test Students</span>
+              This will delete all {visibleStudents.length} student records from Supabase online database and local storage. Leader accounts and registration links will remain completely intact.
+            </div>
+          </div>
+          <p className="text-sm text-gray-600">
+            Are you sure you want to clean the entire student roster?
+          </p>
+          <div className="flex justify-end gap-3 pt-3 border-t border-gray-100">
+            <Button
+              variant="secondary"
+              size="md"
+              disabled={isProcessing}
+              onClick={() => setShowClearAllModal(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="danger"
+              size="md"
+              disabled={isProcessing}
+              onClick={async () => {
+                setIsProcessing(true);
+                try {
+                  await clearAllStudents();
+                  setShowClearAllModal(false);
+                } finally {
+                  setIsProcessing(false);
+                }
+              }}
+              icon={Trash2}
+            >
+              {isProcessing ? 'Clearing...' : 'Yes, Delete All Test Data'}
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 };

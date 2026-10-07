@@ -158,6 +158,11 @@ export const StudentProvider = ({ children }) => {
     await fetchStudents();
   };
 
+  const clearAllStudents = async () => {
+    await studentService.clearAll();
+    await fetchStudents();
+  };
+
   // Metrics
   const stats = useMemo(() => {
     const isMain = (user?.role || '').toUpperCase() === ROLES.MAIN_LEADER;
@@ -198,6 +203,7 @@ export const StudentProvider = ({ children }) => {
         addStudent,
         updateStudent,
         deleteStudent,
+        clearAllStudents,
         stats,
         getRoomOccupancy,
         canAccessStudent,

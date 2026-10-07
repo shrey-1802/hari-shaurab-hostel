@@ -12,13 +12,27 @@ import {
   formatDate,
   calculateAge,
 } from '../../utils/helpers';
-import { Cake, Users, Phone, Sparkles, Heart } from 'lucide-react';
+import { Cake, Users, Phone, Sparkles, Heart, Trash2 } from 'lucide-react';
 
 export const StudentCard = ({ student, onDelete, isMainLeader = false }) => {
   const [showFriendsModal, setShowFriendsModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+
   const isToday = isBirthdayToday(student.dob);
   const isTomorrow = isBirthdayTomorrow(student.dob);
   const isThisWeek = isBirthdayThisWeek(student.dob);
+
+  const handleDelete = async () => {
+    if (!onDelete) return;
+    setIsDeleting(true);
+    try {
+      await onDelete(student.id);
+      setShowDeleteModal(false);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   return (
     <>
@@ -35,6 +49,22 @@ export const StudentCard = ({ student, onDelete, isMainLeader = false }) => {
             : 'border-[#DADADA]/80 hover:border-gold-300 hover:shadow-soft-md'
         }`}
       >
+        {/* Main Leader Delete Quick Action Button */}
+        {isMainLeader && onDelete && (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setShowDeleteModal(true);
+            }}
+            title="Delete Student (Main Leader)"
+            className="absolute top-3.5 right-3.5 z-10 w-8 h-8 rounded-full bg-white/90 backdrop-blur-sm border border-red-200 text-red-500 hover:bg-red-500 hover:text-white flex items-center justify-center transition-all shadow-soft-sm group cursor-pointer"
+          >
+            <Trash2 className="w-4 h-4 transition-transform group-hover:scale-110" />
+          </button>
+        )}
+
         {/* Birthday Floating Badge */}
         {isToday ? (
           <div className="absolute -top-3.5 px-3 py-1 bg-gradient-to-r from-gold-500 to-amber-500 text-white text-[11px] font-extrabold rounded-full shadow-gold-glow flex items-center gap-1.5 animate-pulse">
@@ -168,6 +198,41 @@ export const StudentCard = ({ student, onDelete, isMainLeader = false }) => {
                 Full Profile Details
               </Button>
             </Link>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Delete Confirmation Modal for Main Leader */}
+      <Modal
+        isOpen={showDeleteModal}
+        onClose={() => !isDeleting && setShowDeleteModal(false)}
+        title="Confirm Student Deletion"
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-gray-600 leading-relaxed">
+            Are you sure you want to permanently delete <span className="font-bold text-[#4A4A4A]">{student.full_name}</span> (Floor {student.floor_number}, Room {student.room_number})?
+          </p>
+          <div className="p-3 bg-red-50 rounded-xl border border-red-200 text-xs text-red-700 font-medium">
+            ⚠️ This will remove the student permanently from Supabase Cloud and all hostel dashboards.
+          </div>
+          <div className="flex justify-end gap-3 pt-3 border-t border-gray-100">
+            <Button
+              variant="secondary"
+              size="md"
+              disabled={isDeleting}
+              onClick={() => setShowDeleteModal(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="danger"
+              size="md"
+              disabled={isDeleting}
+              onClick={handleDelete}
+              icon={Trash2}
+            >
+              {isDeleting ? 'Deleting...' : 'Delete Student'}
+            </Button>
           </div>
         </div>
       </Modal>

@@ -96,15 +96,17 @@ export const StudentProfile = () => {
               Edit Details
             </Button>
           </Link>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setShowDeleteModal(true)}
-            className="text-red-500 border-red-200 hover:bg-red-50"
-            icon={Trash2}
-          >
-            Delete
-          </Button>
+          {isMainLeader && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowDeleteModal(true)}
+              className="text-red-500 border-red-200 hover:bg-red-50 font-bold"
+              icon={Trash2}
+            >
+              Delete Student
+            </Button>
+          )}
         </div>
       </div>
 

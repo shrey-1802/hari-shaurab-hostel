@@ -77,13 +77,13 @@ const toApiPayload = (studentData) => {
 
 export const studentService = {
   getAll: async (params = {}) => {
-    let cloudStudents = [];
+    let cloudStudents = null;
     let apiStudents = [];
 
     // 1. Direct Cloud Database Sync (Supabase REST API — 100% Shared Across Devices in Real Time)
     try {
       const cloudList = await cloudSyncService.getAllStudents();
-      if (Array.isArray(cloudList) && cloudList.length > 0) {
+      if (Array.isArray(cloudList)) {
         cloudStudents = cloudList.map(normalizeStudent);
       }
     } catch (cloudErr) {
@@ -103,31 +103,37 @@ export const studentService = {
       // Expected if Render is sleeping; Supabase already handles data
     }
 
-    // 3. Combine and Deduplicate Local Cache, Cloud DB, and FastAPI data
-    const localStudents = getLocalStudents().map(normalizeStudent);
-    const mergedMap = new Map();
+    let mergedList = [];
+    if (cloudStudents !== null) {
+      // Cloud DB is reachable: Cloud is single source of truth
+      const mergedMap = new Map();
+      cloudStudents.forEach((s) => {
+        const key = s.id || s.student_number;
+        if (key) mergedMap.set(String(key), s);
+      });
 
-    localStudents.forEach((s) => {
-      const key = s.id || s.student_number;
-      if (key) mergedMap.set(String(key), s);
-    });
+      // Retain only local items genuinely pending sync
+      const localStudents = getLocalStudents().map(normalizeStudent);
+      localStudents.filter(s => s._pending_cloud_sync === true).forEach((s) => {
+        const key = s.id || s.student_number;
+        if (key && !mergedMap.has(String(key))) mergedMap.set(String(key), s);
+      });
 
-    apiStudents.forEach((s) => {
-      const key = s.id || s.student_number;
-      if (key) mergedMap.set(String(key), s);
-    });
-
-    // Cloud records overwrite stale local cache
-    cloudStudents.forEach((s) => {
-      const key = s.id || s.student_number;
-      if (key) mergedMap.set(String(key), s);
-    });
-
-    let mergedList = Array.from(mergedMap.values());
-    mergedList.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
-
-    if (mergedList.length > 0) {
+      mergedList = Array.from(mergedMap.values());
       saveLocalStudents(mergedList);
+    } else {
+      // Offline fallback only
+      const localStudents = getLocalStudents().map(normalizeStudent);
+      const mergedMap = new Map();
+      localStudents.forEach((s) => {
+        const key = s.id || s.student_number;
+        if (key) mergedMap.set(String(key), s);
+      });
+      apiStudents.forEach((s) => {
+        const key = s.id || s.student_number;
+        if (key) mergedMap.set(String(key), s);
+      });
+      mergedList = Array.from(mergedMap.values());
     }
 
     // Apply filtering if params provided
@@ -223,6 +229,12 @@ export const studentService = {
     } catch {}
 
     return { success: true, message: 'Student deleted successfully' };
+  },
+
+  clearAll: async () => {
+    await cloudSyncService.clearAllStudents();
+    saveLocalStudents([]);
+    return { success: true };
   },
 
   getOccupancy: async (floor = null) => {
