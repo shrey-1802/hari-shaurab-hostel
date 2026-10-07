@@ -21,10 +21,107 @@ const getHeaders = () => ({
 const sanitizePhotoUrl = (url) => {
   if (!url) return 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80';
   if (typeof url === 'string' && url.startsWith('data:image/') && url.length > 50000) {
-    // Large base64 data URIs can exceed Supabase REST payload limits; fallback to standard avatar URL
     return 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80';
   }
   return url;
+};
+
+/**
+ * Execute a resilient Supabase REST POST with automatic schema self-healing.
+ * If a column is missing in Supabase schema cache (400 PGRST204), it extracts the column name,
+ * strips it from payload, and retries automatically.
+ * If duplicate student_number (409), generates a unique suffix and retries.
+ */
+const postStudentWithSelfHealing = async (initialPayload, maxRetries = 6) => {
+  let payload = { ...initialPayload };
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    try {
+      const response = await fetch(`${SUPABASE_URL}/rest/v1/students`, {
+        method: 'POST',
+        headers: getHeaders(),
+        body: JSON.stringify(payload),
+      });
+
+      if (response.ok) {
+        const created = await response.json();
+        const record = Array.isArray(created) ? created[0] : created;
+        console.log(`[CloudSync] ✅ Student '${payload.full_name}' saved online in Supabase DB! ID:`, record?.id);
+        return { success: true, record };
+      }
+
+      const status = response.status;
+      const errText = await response.text().catch(() => '');
+      console.warn(`[CloudSync] Supabase POST attempt ${attempt + 1} status ${status}:`, errText);
+
+      // Handle duplicate student number
+      if (status === 409) {
+        payload.student_number = `${payload.student_number || 'STU'}-${Math.floor(1000 + Math.random() * 9000)}`;
+        continue;
+      }
+
+      // Handle missing column in Supabase schema cache
+      const missingColMatch = errText.match(/Could not find the '([^']+)' column/i);
+      if (missingColMatch && missingColMatch[1]) {
+        const missingCol = missingColMatch[1];
+        console.info(`[CloudSync] Adapting payload: stripping column '${missingCol}' and retrying...`);
+        delete payload[missingCol];
+        continue;
+      }
+
+      // Handle foreign key or not-null constraints on legacy columns
+      if (errText.includes('room_id') && payload.room_id !== undefined) {
+        delete payload.room_id;
+        continue;
+      }
+      if (errText.includes('created_by') && payload.created_by !== undefined) {
+        delete payload.created_by;
+        continue;
+      }
+
+      return { success: false, error: errText, status };
+    } catch (netErr) {
+      console.warn(`[CloudSync] Network error on attempt ${attempt + 1}:`, netErr?.message);
+      return { success: false, error: netErr?.message };
+    }
+  }
+  return { success: false, error: 'Exceeded maximum retry attempts' };
+};
+
+/**
+ * Execute a resilient Supabase REST PATCH with automatic schema self-healing.
+ */
+const patchStudentWithSelfHealing = async (id, initialPayload, maxRetries = 6) => {
+  let payload = { ...initialPayload };
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    try {
+      const response = await fetch(`${SUPABASE_URL}/rest/v1/students?id=eq.${id}`, {
+        method: 'PATCH',
+        headers: getHeaders(),
+        body: JSON.stringify(payload),
+      });
+
+      if (response.ok) {
+        const updated = await response.json();
+        const record = Array.isArray(updated) ? updated[0] : updated;
+        return { success: true, record };
+      }
+
+      const status = response.status;
+      const errText = await response.text().catch(() => '');
+
+      const missingColMatch = errText.match(/Could not find the '([^']+)' column/i);
+      if (missingColMatch && missingColMatch[1]) {
+        const missingCol = missingColMatch[1];
+        delete payload[missingCol];
+        continue;
+      }
+
+      return { success: false, error: errText, status };
+    } catch (netErr) {
+      return { success: false, error: netErr?.message };
+    }
+  }
+  return { success: false, error: 'Exceeded retry attempts' };
 };
 
 export const cloudSyncService = {
@@ -64,10 +161,9 @@ export const cloudSyncService = {
     const rawPhoto = student.profile_image_url || student.profile_picture_url || '';
     const cleanPhoto = sanitizePhotoUrl(rawPhoto);
 
-    // Pack non-core fields into address column as JSON so Supabase doesn't reject with schema cache error
     const extraDetails = {
       college_name: student.college_name || 'Hari-Saurabh Institute of Technology',
-      department: student.department || '',
+      department: student.department || 'General',
       parent_name: student.parent_name || '',
       parent_mobile: student.parent_mobile || '',
       semester_result: student.semester_result || '',
@@ -79,7 +175,7 @@ export const cloudSyncService = {
       registration_source: student.registration_source || 'MANUAL',
     };
 
-    const payload = {
+    const initialPayload = {
       full_name: student.full_name || 'Hostel Student',
       date_of_birth: student.dob || student.date_of_birth || '2000-01-01',
       student_number: student.student_number || `HS-${Date.now().toString().slice(-6)}`,
@@ -88,51 +184,40 @@ export const cloudSyncService = {
       floor_number: Number(student.floor_number) || 4,
       room_number: String(student.room_number) || '401',
       profile_picture_url: cleanPhoto,
+      profile_photo_url: cleanPhoto,
       creator_name: student.creator_name || 'Wing Leader',
+      parent_name: student.parent_name || '',
+      parent_mobile: student.parent_mobile || '',
+      college_name: student.college_name || 'Hari-Saurabh Institute of Technology',
+      department: student.department || 'General',
+      semester_result: student.semester_result || '',
+      hobby: student.hobby || '',
+      hostel_friends: student.hostel_friends || '',
+      non_hostel_friends: student.non_hostel_friends || '',
+      registration_status: student.registration_status || 'APPROVED',
+      registered_via_link: student.registered_via_link || null,
+      registration_source: student.registration_source || 'MANUAL',
       address: JSON.stringify(extraDetails),
     };
 
-    try {
-      let response = await fetch(`${SUPABASE_URL}/rest/v1/students`, {
-        method: 'POST',
-        headers: getHeaders(),
-        body: JSON.stringify(payload),
-      });
+    const result = await postStudentWithSelfHealing(initialPayload);
 
-      // If duplicate student_number error occurred, append random suffix and retry
-      if (!response.ok && response.status === 409) {
-        payload.student_number = `${payload.student_number}-${Math.floor(100 + Math.random() * 900)}`;
-        response = await fetch(`${SUPABASE_URL}/rest/v1/students`, {
-          method: 'POST',
-          headers: getHeaders(),
-          body: JSON.stringify(payload),
-        });
+    if (result.success && result.record) {
+      const record = result.record;
+      const existing = cloudSyncService.getCachedStudents();
+      const updated = [record, ...existing.filter(s => s.id !== record.id)];
+      localStorage.setItem(CLOUD_CACHE_KEY, JSON.stringify(updated));
+
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new Event('student_data_changed'));
       }
-
-      if (response.ok) {
-        const created = await response.json();
-        const record = Array.isArray(created) ? created[0] : created;
-        if (record) {
-          const existing = cloudSyncService.getCachedStudents();
-          const updated = [record, ...existing.filter(s => s.id !== record.id)];
-          localStorage.setItem(CLOUD_CACHE_KEY, JSON.stringify(updated));
-
-          if (typeof window !== 'undefined') {
-            window.dispatchEvent(new Event('student_data_changed'));
-          }
-          return record;
-        }
-      } else {
-        const errDetail = await response.text().catch(() => '');
-        console.warn('[CloudSync] Supabase POST response not ok:', response.status, errDetail);
-      }
-    } catch (error) {
-      console.warn('[CloudSync] Supabase REST insert warning:', error?.message);
+      return record;
     }
 
-    // Local fallback with flag for auto-retry sync
+    // Local fallback only if offline / network completely unreachable
+    console.warn('[CloudSync] Falling back to local cache due to connection issue:', result.error);
     const fallbackRecord = {
-      ...payload,
+      ...initialPayload,
       ...extraDetails,
       id: student.id || `stu-${Date.now()}`,
       created_at: new Date().toISOString(),
@@ -177,10 +262,12 @@ export const cloudSyncService = {
       mobile: student.student_mobile,
       floor_number: student.floor_number ? Number(student.floor_number) : undefined,
       room_number: student.room_number ? String(student.room_number) : undefined,
+      ...extraDetails,
     };
 
     if (rawPhoto) {
       payload.profile_picture_url = sanitizePhotoUrl(rawPhoto);
+      payload.profile_photo_url = sanitizePhotoUrl(rawPhoto);
     }
     if (Object.keys(extraDetails).length > 0) {
       payload.address = JSON.stringify(extraDetails);
@@ -189,29 +276,18 @@ export const cloudSyncService = {
     // Clean undefined fields
     Object.keys(payload).forEach(key => payload[key] === undefined && delete payload[key]);
 
-    try {
-      const response = await fetch(`${SUPABASE_URL}/rest/v1/students?id=eq.${id}`, {
-        method: 'PATCH',
-        headers: getHeaders(),
-        body: JSON.stringify(payload),
-      });
+    const result = await patchStudentWithSelfHealing(id, payload);
 
-      if (response.ok) {
-        const updated = await response.json();
-        const record = Array.isArray(updated) ? updated[0] : updated;
-        if (record) {
-          const existing = cloudSyncService.getCachedStudents();
-          const list = existing.map(s => (s.id === id ? { ...s, ...record, ...extraDetails } : s));
-          localStorage.setItem(CLOUD_CACHE_KEY, JSON.stringify(list));
+    if (result.success && result.record) {
+      const record = result.record;
+      const existing = cloudSyncService.getCachedStudents();
+      const list = existing.map(s => (s.id === id ? { ...s, ...record, ...extraDetails } : s));
+      localStorage.setItem(CLOUD_CACHE_KEY, JSON.stringify(list));
 
-          if (typeof window !== 'undefined') {
-            window.dispatchEvent(new Event('student_data_changed'));
-          }
-          return record;
-        }
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new Event('student_data_changed'));
       }
-    } catch (error) {
-      console.warn('[CloudSync] Supabase REST update warning:', error?.message);
+      return record;
     }
 
     const existing = cloudSyncService.getCachedStudents();
@@ -274,43 +350,44 @@ export const cloudSyncService = {
     });
 
     for (const student of pendingLocal) {
-      try {
-        const extraDetails = {
-          college_name: student.college_name || 'Hari-Saurabh Institute of Technology',
-          department: student.department || '',
-          parent_name: student.parent_name || '',
-          parent_mobile: student.parent_mobile || '',
-          semester_result: student.semester_result || '',
-          hobby: student.hobby || '',
-          hostel_friends: student.hostel_friends || '',
-          non_hostel_friends: student.non_hostel_friends || '',
-          registration_status: student.registration_status || 'APPROVED',
-        };
+      const extraDetails = {
+        college_name: student.college_name || 'Hari-Saurabh Institute of Technology',
+        department: student.department || 'General',
+        parent_name: student.parent_name || '',
+        parent_mobile: student.parent_mobile || '',
+        semester_result: student.semester_result || '',
+        hobby: student.hobby || '',
+        hostel_friends: student.hostel_friends || '',
+        non_hostel_friends: student.non_hostel_friends || '',
+        registration_status: student.registration_status || 'APPROVED',
+      };
 
-        const payload = {
-          full_name: student.full_name || 'Hostel Student',
-          date_of_birth: student.dob || student.date_of_birth || '2000-01-01',
-          student_number: student.student_number || `HS-${Date.now().toString().slice(-6)}`,
-          student_mobile: student.student_mobile || student.mobile || '',
-          mobile: student.student_mobile || student.mobile || '',
-          floor_number: Number(student.floor_number) || 4,
-          room_number: String(student.room_number) || '401',
-          profile_picture_url: sanitizePhotoUrl(student.profile_picture_url || student.profile_image_url),
-          creator_name: student.creator_name || 'Wing Leader',
-          address: JSON.stringify(extraDetails),
-        };
+      const initialPayload = {
+        full_name: student.full_name || 'Hostel Student',
+        date_of_birth: student.dob || student.date_of_birth || '2000-01-01',
+        student_number: student.student_number || `HS-${Date.now().toString().slice(-6)}`,
+        student_mobile: student.student_mobile || student.mobile || '',
+        mobile: student.student_mobile || student.mobile || '',
+        floor_number: Number(student.floor_number) || 4,
+        room_number: String(student.room_number) || '401',
+        profile_picture_url: sanitizePhotoUrl(student.profile_picture_url || student.profile_image_url),
+        profile_photo_url: sanitizePhotoUrl(student.profile_picture_url || student.profile_image_url),
+        creator_name: student.creator_name || 'Wing Leader',
+        parent_name: student.parent_name || '',
+        parent_mobile: student.parent_mobile || '',
+        college_name: student.college_name || 'Hari-Saurabh Institute of Technology',
+        department: student.department || 'General',
+        semester_result: student.semester_result || '',
+        hobby: student.hobby || '',
+        hostel_friends: student.hostel_friends || '',
+        non_hostel_friends: student.non_hostel_friends || '',
+        registration_status: student.registration_status || 'APPROVED',
+        address: JSON.stringify(extraDetails),
+      };
 
-        const res = await fetch(`${SUPABASE_URL}/rest/v1/students`, {
-          method: 'POST',
-          headers: getHeaders(),
-          body: JSON.stringify(payload),
-        });
-
-        if (res.ok) {
-          console.log(`[CloudSync] Auto-synced pending local student '${student.full_name}' to Supabase Cloud DB`);
-        }
-      } catch (err) {
-        console.warn(`[CloudSync] Auto-sync failed for ${student.full_name}:`, err?.message);
+      const syncResult = await postStudentWithSelfHealing(initialPayload);
+      if (syncResult.success) {
+        console.log(`[CloudSync] ✅ Auto-synced local student '${student.full_name}' to Supabase Cloud DB`);
       }
     }
   },
